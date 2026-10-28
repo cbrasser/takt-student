@@ -112,6 +112,16 @@ export function home(lessons: Lesson[], now: Date): Home {
   return { current, next: [...next.values()], last: ended[ended.length - 1] ?? null };
 }
 
+/**
+ * Which lesson stays on show when the current one changes: when a lesson
+ * stops being current with nothing in its place (its exit ticket has closed)
+ * while the student was following home, it stays, so they see the ticket
+ * close; otherwise none, and home decides again. Keys are `lessonKey`s.
+ */
+export function keptOnShow(was: string | null, current: string | null, followingHome: boolean): string | null {
+  return current === null && was !== null && followingHome ? was : null;
+}
+
 /** The lesson before `lesson` in its course ("Letzte Lektion"), or null for the first. */
 export function previousLesson(lessons: Lesson[], lesson: Lesson): Lesson | null {
   const key = courseKey(lesson);

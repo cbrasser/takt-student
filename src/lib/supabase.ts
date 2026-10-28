@@ -7,7 +7,7 @@
 import { createClient, type Session } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { appConfig } from './config';
-import type { Course, Lesson, MaterialRef } from './lessons';
+import { lessonKey, type Course, type Lesson, type MaterialRef } from './lessons';
 import { checkInStatus, type CheckIn } from './checkin';
 import type { ExitTicket, Submission } from './exitTicket';
 
@@ -128,7 +128,7 @@ export async function loadStudentData(): Promise<StudentData> {
   if (checkIns.error) throw checkIns.error;
   if (tickets.error) throw tickets.error;
   if (notes.error) throw notes.error;
-  const noteOf = new Map(notes.data.map((n) => [`${n.teacher_id}/${n.lesson_id}`, n.note]));
+  const noteOf = new Map(notes.data.map((n) => [lessonKey({ teacherId: n.teacher_id, id: n.lesson_id }), n.note]));
   return {
     lessons: lessons.data.map((r) => ({
       teacherId: r.teacher_id,
@@ -152,7 +152,7 @@ export async function loadStudentData(): Promise<StudentData> {
       siteUrl: r.site_url,
     })),
     checkIns: checkIns.data.map(checkInOf),
-    exitTickets: tickets.data.map((t) => exitTicketOf(t, noteOf.get(`${t.teacher_id}/${t.lesson_id}`))),
+    exitTickets: tickets.data.map((t) => exitTicketOf(t, noteOf.get(lessonKey({ teacherId: t.teacher_id, id: t.lesson_id })))),
   };
 }
 

@@ -90,6 +90,8 @@ export function exitRefusal(reason: string | undefined, lesson: Lesson): string 
       return 'Du bist nicht in diesem Kurs eingeschrieben.';
     case 'exit_ticket_unclear_blank':
       return BLANK;
+    case 'exit_ticket_invalid_ratings':
+      return 'Wähle bei jedem Ziel –, 1, 2, 3 oder 4.';
     default:
       return 'Abgeben hat nicht geklappt. Bist du online?';
   }
@@ -98,6 +100,13 @@ export function exitRefusal(reason: string | undefined, lesson: Lesson): string 
 /** "Abgegeben 08:52" */
 export function handedInLabel(at: Date): string {
   return `Abgegeben ${formatTime(at)}`;
+}
+
+/** Under "Abgeben": "Offen bis 09:15", or "Abgegeben 08:52 · du kannst bis 09:15 ändern". */
+export function openLabel(closesAt: Date, handedInAt: Date | null): string {
+  return handedInAt
+    ? `${handedInLabel(handedInAt)} · du kannst bis ${formatTime(closesAt)} ändern`
+    : `Offen bis ${formatTime(closesAt)}`;
 }
 
 /** "Das Exit-Ticket ist seit 09:15 geschlossen. Abgegeben 08:52." */

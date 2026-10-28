@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { courseHues, home, materialUrl, previousLesson, type Course, type Lesson } from '../src/lib/lessons.ts';
+import { courseHues, home, keptOnShow, materialUrl, previousLesson, type Course, type Lesson } from '../src/lib/lessons.ts';
 
 const MIN = 60_000;
 
@@ -138,4 +138,15 @@ test('courses take the hues in order of their name, and wrap after four', () => 
     ['a', 'b', 'c', 'd', 'e'].map((id) => hues.get(`anna/${id}`)),
     [0, 1, 2, 3, 0],
   );
+});
+
+test('a lesson whose ticket has closed stays on show for a student following home', () => {
+  assert.equal(keptOnShow('anna/l1', null, true), 'anna/l1');
+});
+
+test('nothing is kept when the next lesson opens, when the student had gone elsewhere, or when nothing was on', () => {
+  assert.equal(keptOnShow('anna/l1', 'anna/l2', true), null);
+  assert.equal(keptOnShow('anna/l1', null, false), null);
+  assert.equal(keptOnShow(null, null, true), null);
+  assert.equal(keptOnShow(null, 'anna/l2', true), null);
 });

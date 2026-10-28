@@ -43,9 +43,13 @@
   </header>
 
   <!-- While it is open the exit ticket comes first; once closed, after the lesson's content. -->
-  {#if exit.kind === 'open'}
-    <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {onhandin} />
-  {/if}
+  {#snippet exitTicketLeaf()}
+    {#if exit.kind !== 'not-open'}
+      <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {onhandin} />
+    {/if}
+  {/snippet}
+
+  {#if exit.kind === 'open'}{@render exitTicketLeaf()}{/if}
 
   {#if lesson.goals.length > 0}
     <section class="leaf">
@@ -79,9 +83,7 @@
     </section>
   {/if}
 
-  {#if exit.kind === 'closed'}
-    <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {onhandin} />
-  {/if}
+  {#if exit.kind === 'closed'}{@render exitTicketLeaf()}{/if}
 
   {#if previous}
     <section class="leaf previous" aria-labelledby="previous-title">

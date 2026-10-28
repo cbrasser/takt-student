@@ -4,13 +4,12 @@
     closedLabel,
     draftOf,
     exitRefusal,
-    handedInLabel,
+    openLabel,
     submissionOf,
     ALLES_KLAR,
     type ExitTicket,
     type ExitTicketState,
   } from './exitTicket';
-  import { formatTime } from './format';
   import type { Lesson } from './lessons';
   import { handIn } from './supabase';
 
@@ -123,11 +122,9 @@
       <div class="actions">
         <button class="btn btn-primary" type="submit" disabled={busy}>Abgeben</button>
         {#if exit.handedInAt}
-          <p class="handed-in" role="status">
-            {handedInLabel(exit.handedInAt)} · du kannst bis {formatTime(exit.closesAt)} ändern
-          </p>
+          <p class="handed-in" role="status">{openLabel(exit.closesAt, exit.handedInAt)}</p>
         {:else}
-          <p class="muted">Offen bis {formatTime(exit.closesAt)}</p>
+          <p class="muted">{openLabel(exit.closesAt, null)}</p>
         {/if}
       </div>
     </form>
@@ -172,8 +169,8 @@
   }
 
   .choice input {
-    width: 20px;
-    height: 20px;
+    width: var(--s-5);
+    height: var(--s-5);
     accent-color: var(--ink);
   }
 
@@ -230,7 +227,7 @@
 
   .step input:focus-visible + span {
     outline: var(--focus);
-    outline-offset: 2px;
+    outline-offset: var(--line-w);
   }
 
   .actions {

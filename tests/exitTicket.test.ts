@@ -4,6 +4,7 @@ import {
   ALLES_KLAR,
   closedLabel,
   draftOf,
+  openLabel,
   exitRefusal,
   exitTicketState,
   handedInLabel,
@@ -163,6 +164,7 @@ test('a server refusal says why', () => {
   assert.equal(exitRefusal('exit_ticket_closed', lesson), 'Das Exit-Ticket ist seit 09:15 geschlossen.');
   assert.equal(exitRefusal('exit_ticket_not_enrolled', lesson), 'Du bist nicht in diesem Kurs eingeschrieben.');
   assert.equal(exitRefusal('exit_ticket_unclear_blank', lesson), 'Schreib, was unklar war, oder wähle «Alles klar».');
+  assert.equal(exitRefusal('exit_ticket_invalid_ratings', lesson), 'Wähle bei jedem Ziel –, 1, 2, 3 oder 4.');
   assert.equal(exitRefusal(undefined, lesson), 'Abgeben hat nicht geklappt. Bist du online?');
 });
 
@@ -175,4 +177,10 @@ test('closed, it says since when, and whether it was handed in', () => {
   const closedAt = new Date('2026-11-02T09:15:00+01:00');
   assert.equal(closedLabel(closedAt, new Date('2026-11-02T08:52:00+01:00')), 'Das Exit-Ticket ist seit 09:15 geschlossen. Abgegeben 08:52.');
   assert.equal(closedLabel(closedAt, null), 'Das Exit-Ticket ist seit 09:15 geschlossen. Du hast keines abgegeben.');
+});
+
+test('open, it says until when, and once handed in that it can still change', () => {
+  const closesAt = new Date('2026-11-02T09:15:00+01:00');
+  assert.equal(openLabel(closesAt, null), 'Offen bis 09:15');
+  assert.equal(openLabel(closesAt, new Date('2026-11-02T08:52:00+01:00')), 'Abgegeben 08:52 · du kannst bis 09:15 ändern');
 });

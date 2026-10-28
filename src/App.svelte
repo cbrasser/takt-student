@@ -4,7 +4,7 @@
   import { isTauri } from '@tauri-apps/api/core';
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { config, loadStudentData, onSession, signOut, type StudentData } from './lib/supabase';
-  import { courseHues, courseKey, home, lessonKey, previousLesson, type Lesson } from './lib/lessons';
+  import { courseHues, courseKey, home, keptOnShow, lessonKey, previousLesson, type Lesson } from './lib/lessons';
   import { refreshDue, type CheckIn } from './lib/checkin';
   import type { ExitTicket } from './lib/exitTicket';
   import { formatTime } from './lib/format';
@@ -100,7 +100,8 @@
   $effect(() => {
     const key = currentKey;
     untrack(() => {
-      opened = key === null && wasCurrent !== null && opened === null && data ? { kind: 'lesson', key: wasCurrent } : null;
+      const kept = data ? keptOnShow(wasCurrent, key, opened === null) : null;
+      opened = kept ? { kind: 'lesson', key: kept } : null;
       wasCurrent = key;
     });
   });
