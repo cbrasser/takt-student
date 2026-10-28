@@ -3,6 +3,7 @@
 const ZONE = 'Europe/Zurich';
 
 const time = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, hour: '2-digit', minute: '2-digit' });
+const date = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const day = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long' });
 
 /** "08:15" */
@@ -23,4 +24,9 @@ export function formatWhen(start: Date, end: Date): string {
 /** "Montag, 2. November" */
 export function formatDay(d: Date): string {
   return day.format(d);
+}
+
+/** "Montag, 2. November 2026": a day that is read again years later. */
+export function formatDate(d: Date): string {
+  return date.format(d);
 }

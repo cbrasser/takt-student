@@ -78,7 +78,7 @@ export async function checkInTo(lesson: Lesson): Promise<{ checkIn: CheckIn } | 
   return { checkIn: checkInOf(data) };
 }
 
-const TICKET_COLUMNS = 'teacher_id, lesson_id, unclear, ratings, submitted_at';
+const TICKET_COLUMNS = 'teacher_id, lesson_id, unclear, ratings, submitted_at, excused';
 
 function ratingsOf(json: unknown): Record<string, number> {
   if (!json || typeof json !== 'object' || Array.isArray(json)) return {};
@@ -87,7 +87,7 @@ function ratingsOf(json: unknown): Record<string, number> {
 
 /** One ticket from its two rows; a note alone (no ticket row) can't happen, both are written together. */
 function exitTicketOf(
-  t: { teacher_id: string; lesson_id: string; unclear: string | null; ratings: unknown; submitted_at: string | null },
+  t: { teacher_id: string; lesson_id: string; unclear: string | null; ratings: unknown; submitted_at: string | null; excused: boolean },
   note: string | undefined,
 ): ExitTicket {
   return {
@@ -97,6 +97,7 @@ function exitTicketOf(
     unclear: t.unclear ?? '',
     ratings: ratingsOf(t.ratings),
     submittedAt: t.submitted_at ? new Date(t.submitted_at) : null,
+    excused: t.excused,
   };
 }
 

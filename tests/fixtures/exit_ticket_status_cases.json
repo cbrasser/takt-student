@@ -1,0 +1,22 @@
+[
+  {"case": "checked in on time, no ticket", "check_in": "on_time", "ticket": null, "status": "missing"},
+  {"case": "checked in on time, handed in", "check_in": "on_time", "ticket": {"submitted": true, "excused": false}, "status": "handed_in"},
+  {"case": "checked in on time, excused, not handed in", "check_in": "on_time", "ticket": {"submitted": false, "excused": true}, "status": "excused"},
+  {"case": "checked in on time, handed in and excused", "check_in": "on_time", "ticket": {"submitted": true, "excused": true}, "status": "handed_in"},
+  {"case": "checked in late, no ticket", "check_in": "late", "ticket": null, "status": "missing"},
+  {"case": "checked in late, handed in", "check_in": "late", "ticket": {"submitted": true, "excused": false}, "status": "handed_in"},
+  {"case": "checked in late, excused, not handed in", "check_in": "late", "ticket": {"submitted": false, "excused": true}, "status": "excused"},
+  {"case": "checked in late, handed in and excused", "check_in": "late", "ticket": {"submitted": true, "excused": true}, "status": "handed_in"},
+  {"case": "present by hand, no ticket", "check_in": "present", "ticket": null, "status": "missing"},
+  {"case": "present by hand, handed in", "check_in": "present", "ticket": {"submitted": true, "excused": false}, "status": "handed_in"},
+  {"case": "present by hand, excused, not handed in", "check_in": "present", "ticket": {"submitted": false, "excused": true}, "status": "excused"},
+  {"case": "present by hand, handed in and excused", "check_in": "present", "ticket": {"submitted": true, "excused": true}, "status": "handed_in"},
+  {"case": "excused from the lesson, no ticket", "check_in": "excused", "ticket": null, "status": "not_required"},
+  {"case": "excused from the lesson, handed in", "check_in": "excused", "ticket": {"submitted": true, "excused": false}, "status": "not_required"},
+  {"case": "excused from the lesson, excused, not handed in", "check_in": "excused", "ticket": {"submitted": false, "excused": true}, "status": "not_required"},
+  {"case": "excused from the lesson, handed in and excused", "check_in": "excused", "ticket": {"submitted": true, "excused": true}, "status": "not_required"},
+  {"case": "no check-in, no ticket", "check_in": "missing", "ticket": null, "status": "not_required"},
+  {"case": "no check-in, handed in", "check_in": "missing", "ticket": {"submitted": true, "excused": false}, "status": "not_required"},
+  {"case": "no check-in, excused, not handed in", "check_in": "missing", "ticket": {"submitted": false, "excused": true}, "status": "not_required"},
+  {"case": "no check-in, handed in and excused", "check_in": "missing", "ticket": {"submitted": true, "excused": true}, "status": "not_required"}
+]

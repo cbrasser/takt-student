@@ -6,11 +6,13 @@
   import { config, loadStudentData, onSession, signOut, type StudentData } from './lib/supabase';
   import { courseHues, courseKey, home, keptOnShow, lessonKey, previousLesson, type Lesson } from './lib/lessons';
   import { refreshDue, type CheckIn } from './lib/checkin';
+  import { courseHistory } from './lib/history';
   import type { ExitTicket } from './lib/exitTicket';
   import { formatTime } from './lib/format';
   import Login from './lib/Login.svelte';
   import LessonView from './lib/LessonView.svelte';
   import Overview from './lib/Overview.svelte';
+  import History from './lib/History.svelte';
 
   const CLOCK_MS = 30_000;
 
@@ -22,7 +24,7 @@
   let now = $state(new Date());
   let loading = false;
   /** What the student opened by hand; null follows home (the current lesson, else the overview). */
-  let opened = $state<{ kind: 'overview' } | { kind: 'lesson'; key: string } | null>(null);
+  let opened = $state<{ kind: 'overview' } | { kind: 'lesson'; key: string } | { kind: 'history'; course: string } | null>(null);
 
   const userId = $derived(session?.user.id ?? null);
 
@@ -30,13 +32,17 @@
   const courses = $derived(new Map((data?.courses ?? []).map((c) => [courseKey(c), c])));
   const hues = $derived(courseHues(data?.courses ?? []));
   const shown = $derived.by((): Lesson | null => {
-    if (!data || opened?.kind === 'overview') return null;
+    if (!data || opened?.kind === 'overview' || opened?.kind === 'history') return null;
     if (opened?.kind === 'lesson') {
       const key = opened.key;
       return data.lessons.find((l) => lessonKey(l) === key) ?? null;
     }
     return lessonsNow?.current ?? null;
   });
+  const historyCourse = $derived(opened?.kind === 'history' ? courses.get(opened.course) : undefined);
+  const history = $derived(
+    data && historyCourse ? courseHistory(data.lessons, historyCourse, data.checkIns, data.exitTickets, now) : [],
+  );
   const currentKey = $derived(lessonsNow?.current ? lessonKey(lessonsNow.current) : null);
   const checkIns = $derived(new Map((data?.checkIns ?? []).map((c) => [lessonKey({ teacherId: c.teacherId, id: c.lessonId }), c])));
   const exitTickets = $derived(
@@ -106,9 +112,10 @@
     });
   });
 
-  // The page takes the hue of the course on show.
+  // The page takes the hue of the course on show, a lesson's or its Verlauf's.
   $effect(() => {
-    const hue = shown ? hues.get(courseKey(shown)) : undefined;
+    const on = shown ?? historyCourse;
+    const hue = on ? hues.get(courseKey(on)) : undefined;
     if (hue === undefined) delete document.documentElement.dataset.hue;
     else document.documentElement.dataset.hue = String(hue);
   });
@@ -150,7 +157,7 @@
     <header class="app-bar">
       <span class="wordmark">Takt</span>
       <div class="app-bar-actions">
-        {#if shown}
+        {#if shown || historyCourse}
           <button class="btn" onclick={() => (opened = { kind: 'overview' })}>Übersicht</button>
         {/if}
         <button class="btn btn-quiet" onclick={signOut}>Abmelden</button>
@@ -170,6 +177,8 @@
         <h1 class="display">Noch keine Lektionen</h1>
         <p class="lede">Sobald deine Lehrperson Lektionen für deine Kurse plant, erscheinen sie hier.</p>
       </section>
+    {:else if historyCourse}
+      <History course={historyCourse} entries={history} />
     {:else if shown}
       {#key lessonKey(shown)}
         <LessonView
@@ -184,7 +193,13 @@
         />
       {/key}
     {:else}
-      <Overview home={lessonsNow} {courses} {hues} onopen={(l) => (opened = { kind: 'lesson', key: lessonKey(l) })} />
+      <Overview
+        home={lessonsNow}
+        {courses}
+        {hues}
+        onopen={(l) => (opened = { kind: 'lesson', key: lessonKey(l) })}
+        onhistory={(c) => (opened = { kind: 'history', course: courseKey(c) })}
+      />
     {/if}
   </div>
 {/if}
