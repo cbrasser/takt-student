@@ -5,6 +5,7 @@
  * `exitNotice.ts`.
  */
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
+import type { Notice } from './exitNotice';
 
 const SWITCH_KEY = 'takt-student.exit-notice';
 const seenKey = (userId: string) => `takt-student.exit-notice-seen.${userId}`;
@@ -46,7 +47,7 @@ export function keepSeenOpen(userId: string, seen: string[]) {
 }
 
 /** Shows an OS notification; the OS asks for permission the first time. */
-export async function notify(notice: { title: string; body: string }) {
+export async function notify(notice: Notice) {
   try {
     const granted = (await isPermissionGranted()) || (await requestPermission()) === 'granted';
     if (granted) sendNotification(notice);

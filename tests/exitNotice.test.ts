@@ -25,14 +25,14 @@ const opens = new Date('2026-11-02T08:50:00+01:00');
 const at = (d: Date, deltaMs: number) => new Date(d.getTime() + deltaMs);
 
 test('it fires when the polling first sees the ticket open', () => {
-  assert.deepEqual(exitNotices([lesson], [], [], true, at(opens, -1)).notify, []);
-  assert.deepEqual(exitNotices([lesson], [], [], true, opens).notify, [lesson]);
+  assert.deepEqual(exitNotices([lesson], [], [], true, at(opens, -1)).due, []);
+  assert.deepEqual(exitNotices([lesson], [], [], true, opens).due, [lesson]);
 });
 
 test('it fires once per lesson: the next polls remember it, also after a restart', () => {
   const first = exitNotices([lesson], [], [], true, opens);
   assert.deepEqual(first.seen, [lessonKey(lesson)]);
-  assert.deepEqual(exitNotices([lesson], [], first.seen, true, at(opens, 60_000)).notify, []);
+  assert.deepEqual(exitNotices([lesson], [], first.seen, true, at(opens, 60_000)).due, []);
 });
 
 test('it never fires once the ticket is handed in', () => {
@@ -44,21 +44,21 @@ test('it never fires once the ticket is handed in', () => {
     ratings: {},
     submittedAt: at(opens, 60_000),
   };
-  assert.deepEqual(exitNotices([lesson], [handedIn], [], true, at(opens, 120_000)).notify, []);
+  assert.deepEqual(exitNotices([lesson], [handedIn], [], true, at(opens, 120_000)).due, []);
   // A note written before handing in is no hand-in.
   const noteOnly = { ...handedIn, unclear: '', submittedAt: null };
-  assert.deepEqual(exitNotices([lesson], [noteOnly], [], true, at(opens, 120_000)).notify, [lesson]);
+  assert.deepEqual(exitNotices([lesson], [noteOnly], [], true, at(opens, 120_000)).due, [lesson]);
 });
 
 test('it never fires when switched off, nor when switched on again while that ticket is open', () => {
   const off = exitNotices([lesson], [], [], false, opens);
-  assert.deepEqual(off.notify, []);
-  assert.deepEqual(exitNotices([lesson], [], off.seen, true, at(opens, 60_000)).notify, []);
+  assert.deepEqual(off.due, []);
+  assert.deepEqual(exitNotices([lesson], [], off.seen, true, at(opens, 60_000)).due, []);
 });
 
 test('it fires when the teacher opens the ticket early', () => {
   const early = { ...lesson, exitOpenedAt: new Date('2026-11-02T08:30:00+01:00') };
-  assert.deepEqual(exitNotices([early], [], [], true, new Date('2026-11-02T08:31:00+01:00')).notify, [early]);
+  assert.deepEqual(exitNotices([early], [], [], true, new Date('2026-11-02T08:31:00+01:00')).due, [early]);
 });
 
 test('the notification names the course and when the ticket closes', () => {

@@ -120,9 +120,9 @@
     const on = noticeOn;
     if (!desktop || !d || !user) return;
     untrack(() => {
-      const { notify: lessons, seen } = exitNotices(d.lessons, d.exitTickets, seenOpen(user), on, t);
+      const { due, seen } = exitNotices(d.lessons, d.exitTickets, seenOpen(user), on, t);
       keepSeenOpen(user, seen);
-      for (const l of lessons) void notify(exitNotice(l, courses.get(courseKey(l))));
+      for (const l of due) void notify(exitNotice(l, courses.get(courseKey(l))));
     });
   });
 
@@ -141,7 +141,7 @@
   /** In the desktop app a link opens in the browser, not in the app's window. */
   function openExternally(e: MouseEvent) {
     const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
-    if (!a || !isTauri() || a.origin === location.origin || !/^https?:$/.test(a.protocol)) return;
+    if (!a || !desktop || a.origin === location.origin || !/^https?:$/.test(a.protocol)) return;
     e.preventDefault();
     void openUrl(a.href);
   }
@@ -196,7 +196,7 @@
     {/if}
 
     {#if opened?.kind === 'settings'}
-      <Settings exitNotice={noticeOn} onchange={switchExitNotice} />
+      <Settings on={noticeOn} onchange={switchExitNotice} />
     {:else if !data || !lessonsNow}
       {#if !offline}<p class="muted">Lädt …</p>{/if}
     {:else if data.lessons.length === 0}

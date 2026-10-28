@@ -1,5 +1,6 @@
 <script lang="ts">
-  let { exitNotice, onchange }: { exitNotice: boolean; onchange: (on: boolean) => void } = $props();
+  /** `on`: whether «Exit-Ticket ist offen» is switched on. */
+  let { on, onchange }: { on: boolean; onchange: (on: boolean) => void } = $props();
 </script>
 
 <section class="stack">
@@ -10,7 +11,7 @@
       <input
         type="checkbox"
         role="switch"
-        checked={exitNotice}
+        checked={on}
         onchange={(e) => onchange((e.currentTarget as HTMLInputElement).checked)}
       />
       <span>«Exit-Ticket ist offen»</span>

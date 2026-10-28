@@ -9,7 +9,7 @@ import { exitClosesAt, isExitOpen, lessonKey, type Course, type Lesson } from '.
 
 export interface ExitNotices {
   /** The lessons to notify about now. */
-  notify: Lesson[];
+  due: Lesson[];
   /** The `lessonKey`s seen open, to pass to the next poll. */
   seen: string[];
 }
@@ -18,13 +18,19 @@ export function exitNotices(lessons: Lesson[], tickets: ExitTicket[], seen: stri
   const open = lessons.filter((l) => isExitOpen(l, now));
   const handedIn = new Set(tickets.filter((t) => t.submittedAt).map((t) => lessonKey({ teacherId: t.teacherId, id: t.lessonId })));
   return {
-    notify: enabled ? open.filter((l) => !seen.includes(lessonKey(l)) && !handedIn.has(lessonKey(l))) : [],
+    due: enabled ? open.filter((l) => !seen.includes(lessonKey(l)) && !handedIn.has(lessonKey(l))) : [],
     seen: open.map(lessonKey),
   };
 }
 
+/** What the OS notification says. */
+export interface Notice {
+  title: string;
+  body: string;
+}
+
 /** "Exit-Ticket ist offen" / "3a · Informatik · offen bis 09:15" */
-export function exitNotice(lesson: Lesson, course: Course | undefined): { title: string; body: string } {
+export function exitNotice(lesson: Lesson, course: Course | undefined): Notice {
   const until = `bis ${formatTime(exitClosesAt(lesson))}`;
   return { title: 'Exit-Ticket ist offen', body: course ? `${course.name} · offen ${until}` : `Offen ${until}` };
 }
