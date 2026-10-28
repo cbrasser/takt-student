@@ -1,14 +1,15 @@
 <script lang="ts">
   import type { NoticeSwitches, NoticeType } from './notifications';
+  import { FROM_HOUR } from './reminders';
 
   /** `switches`: which notifications are on. */
   let { switches, onchange }: { switches: NoticeSwitches; onchange: (type: NoticeType, on: boolean) => void } = $props();
 
   const NOTICES: { type: NoticeType; label: string; when: string }[] = [
     { type: 'exit', label: '«Exit-Ticket ist offen»', when: 'Einmal pro Lektion, wenn das Exit-Ticket öffnet, ausser du hast es schon abgegeben.' },
-    { type: 'week', label: '«Prüfung/Abgabe in 7 Tagen»', when: 'Eine Woche vorher, ab 7 Uhr.' },
-    { type: 'tomorrow', label: '«Prüfung/Abgabe morgen»', when: 'Am Tag davor, ab 7 Uhr.' },
-    { type: 'today', label: '«Abgabe heute»', when: 'Am Tag der Abgabefrist, ab 7 Uhr, bis die Frist abläuft.' },
+    { type: 'week', label: '«Prüfung/Abgabe in 7 Tagen»', when: `Eine Woche vorher, ab ${FROM_HOUR} Uhr.` },
+    { type: 'tomorrow', label: '«Prüfung/Abgabe morgen»', when: `Am Tag davor, ab ${FROM_HOUR} Uhr.` },
+    { type: 'today', label: '«Abgabe heute»', when: `Am Tag der Abgabefrist, ab ${FROM_HOUR} Uhr, bis die Frist abläuft.` },
   ];
 </script>
 

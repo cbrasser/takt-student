@@ -51,3 +51,17 @@ const dayMonth = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, day: 'numeri
 export function formatWeek(monday: string): string {
   return `Woche vom ${dayMonth.format(noonOf(monday))}`;
 }
+
+const hour = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, hour: '2-digit', hourCycle: 'h23' });
+
+/** The hour on the Swiss clock, 0–23. */
+export function hourOf(d: Date): number {
+  return Number(hour.format(d));
+}
+
+/** "2026-11-16" plus `n` days. */
+export function addDays(day: string, n: number): string {
+  const d = noonOf(day);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}

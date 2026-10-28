@@ -42,7 +42,7 @@ export function setNoticeOn(type: NoticeType, on: boolean) {
 }
 
 /** What this student's app already noticed, so a restart doesn't notify again. */
-function keys(storageKey: string): string[] {
+function readKeys(storageKey: string): string[] {
   try {
     const kept: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     return Array.isArray(kept) ? kept.filter((k) => typeof k === 'string') : [];
@@ -51,7 +51,7 @@ function keys(storageKey: string): string[] {
   }
 }
 
-function keep(storageKey: string, kept: string[]) {
+function writeKeys(storageKey: string, kept: string[]) {
   try {
     localStorage.setItem(storageKey, JSON.stringify(kept));
   } catch {
@@ -63,12 +63,12 @@ const seenKey = (userId: string) => `takt-student.exit-notice-seen.${userId}`;
 const sentKey = (userId: string) => `takt-student.reminders-sent.${userId}`;
 
 /** The `lessonKey`s this student's app has seen open. */
-export const seenOpen = (userId: string) => keys(seenKey(userId));
-export const keepSeenOpen = (userId: string, seen: string[]) => keep(seenKey(userId), seen);
+export const seenOpen = (userId: string) => readKeys(seenKey(userId));
+export const keepSeenOpen = (userId: string, seen: string[]) => writeKeys(seenKey(userId), seen);
 
 /** The reminders this student's app has sent (`reminders()`'s keys). */
-export const sentReminders = (userId: string) => keys(sentKey(userId));
-export const keepSentReminders = (userId: string, sent: string[]) => keep(sentKey(userId), sent);
+export const sentReminders = (userId: string) => readKeys(sentKey(userId));
+export const keepSentReminders = (userId: string, sent: string[]) => writeKeys(sentKey(userId), sent);
 
 /** Shows an OS notification; the OS asks for permission the first time. */
 export async function notify(notice: Notice) {

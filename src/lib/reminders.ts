@@ -7,7 +7,7 @@
  */
 import { assessmentKey, kindLabel, type Assessment } from './assessments.ts';
 import type { Notice } from './exitNotice.ts';
-import { formatTime, isoDay } from './format.ts';
+import { addDays, formatDay, formatTime, hourOf, isoDay } from './format.ts';
 import type { Course } from './lessons.ts';
 
 /** "in 7 Tagen", "morgen", "Abgabe heute". */
@@ -30,16 +30,14 @@ export interface Reminders {
 }
 
 /** No reminder before this hour of the day, on the Swiss clock. */
-const FROM_HOUR = 7;
+export const FROM_HOUR = 7;
 
-const hourIn = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Zurich', hour: '2-digit', hourCycle: 'h23' });
-
-/** "2026-11-16" plus `n` days. */
-function addDays(day: string, n: number): string {
-  const d = new Date(`${day}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
+/** Per type: how many days before the day it's about it fires, and what the notice says of when. */
+const RULES: Record<ReminderKind, { daysBefore: number; when: string }> = {
+  week: { daysBefore: 7, when: 'in 7 Tagen' },
+  tomorrow: { daysBefore: 1, when: 'morgen' },
+  today: { daysBefore: 0, when: 'heute' },
+};
 
 /**
  * The day a reminder is about: the assessment's date, or for "Abgabe heute"
@@ -51,10 +49,11 @@ function aboutDay(kind: ReminderKind, a: Assessment): string {
 }
 
 /** The day a reminder fires on. */
-function firesOn(kind: ReminderKind, a: Assessment): string {
-  const day = aboutDay(kind, a);
-  return kind === 'week' ? addDays(day, -7) : kind === 'tomorrow' ? addDays(day, -1) : day;
-}
+const firesOn = (kind: ReminderKind, a: Assessment) => addDays(aboutDay(kind, a), -RULES[kind].daysBefore);
+
+/** "Abgabe heute" is an Abgabe's, until its deadline. */
+const applies = (kind: ReminderKind, a: Assessment, now: Date) =>
+  kind !== 'today' || (a.kind === 'hand-in' && (a.deadline === null || a.deadline.getTime() > now.getTime()));
 
 /** "tomorrow anna/seed-assessment-test 2026-11-16" */
 const keyOf = (kind: ReminderKind, a: Assessment) => `${kind} ${assessmentKey(a)} ${aboutDay(kind, a)}`;
@@ -65,12 +64,12 @@ const keyDay = (key: string) => key.slice(key.lastIndexOf(' ') + 1);
 export function reminders(assessments: Assessment[], sent: string[], switches: ReminderSwitches, now: Date): Reminders {
   const today = isoDay(now);
   const due: Reminder[] = [];
-  if (Number(hourIn.format(now)) >= FROM_HOUR) {
+  if (hourOf(now) >= FROM_HOUR) {
     for (const assessment of assessments) {
       for (const kind of REMINDER_KINDS) {
-        if (!switches[kind] || firesOn(kind, assessment) !== today || sent.includes(keyOf(kind, assessment))) continue;
-        if (kind === 'today' && (assessment.kind !== 'hand-in' || (assessment.deadline && assessment.deadline.getTime() <= now.getTime()))) continue;
-        due.push({ kind, assessment });
+        if (switches[kind] && firesOn(kind, assessment) === today && applies(kind, assessment, now) && !sent.includes(keyOf(kind, assessment))) {
+          due.push({ kind, assessment });
+        }
       }
     }
   }
@@ -80,14 +79,22 @@ export function reminders(assessments: Assessment[], sent: string[], switches: R
   };
 }
 
-const WHEN: Record<ReminderKind, string> = { week: 'in 7 Tagen', tomorrow: 'morgen', today: 'heute' };
+/**
+ * The deadline as the notice says it: "bis 18:00" on the day the reminder is
+ * about, else with its own day, "bis Freitag, 20. November, 18:00".
+ */
+function until(r: Reminder): string | null {
+  const d = r.assessment.deadline;
+  if (!d) return null;
+  return isoDay(d) === aboutDay(r.kind, r.assessment) ? `bis ${formatTime(d)}` : `bis ${formatDay(d)}, ${formatTime(d)}`;
+}
 
 /** "Prüfung in 7 Tagen" / "3a · Informatik · Prüfung Kryptologie", and an Abgabe's deadline: "· bis 18:00". */
 export function reminderNotice(r: Reminder, course: Course | undefined): Notice {
   const a = r.assessment;
-  const parts = [course?.name, a.title, a.deadline && `bis ${formatTime(a.deadline)}`];
+  const parts = [course?.name, a.title, until(r)];
   return {
-    title: `${kindLabel(a.kind)} ${WHEN[r.kind]}`,
+    title: `${kindLabel(a.kind)} ${RULES[r.kind].when}`,
     body: parts.filter(Boolean).join(' · '),
   };
 }

@@ -102,3 +102,9 @@ test('the notification names the kind, when, the course and the title', () => {
   assert.deepEqual(reminderNotice({ kind: 'today', assessment: abgabe }, undefined), { title: 'Abgabe heute', body: 'Titel abgabe · bis 18:00' });
   assert.deepEqual(reminderNotice({ kind: 'tomorrow', assessment: { ...pruefung, title: '' } }, course), { title: 'Prüfung morgen', body: '3a · Informatik' });
 });
+
+test('an Abgabe due on another day than its date: the reminder names the deadline\'s day', () => {
+  const later = assessment('spaeter', '2026-11-13', { kind: 'hand-in', title: 'Bericht', deadline: at('2026-11-20', '18:00') });
+  assert.deepEqual(reminderNotice({ kind: 'tomorrow', assessment: later }, undefined), { title: 'Abgabe morgen', body: 'Bericht · bis Freitag, 20. November, 18:00' });
+  assert.deepEqual(reminderNotice({ kind: 'today', assessment: later }, undefined), { title: 'Abgabe heute', body: 'Bericht · bis 18:00' });
+});

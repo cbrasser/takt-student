@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatDay, formatIsoDay, formatTimes, formatWeek, formatWhen, isoDay } from '../src/lib/format.ts';
+import { addDays, formatDate, formatDay, formatIsoDay, formatTimes, formatWeek, formatWhen, hourOf, isoDay } from '../src/lib/format.ts';
 
 // 07:15 UTC is 08:15 in Zurich in winter, whatever the laptop's own zone.
 const start = new Date('2026-11-02T07:15:00Z');
@@ -34,4 +34,10 @@ test('the ISO day is Zurich\'s, as the database\'s dates are', () => {
 test('a day given as "2026-11-09" is named as that day, wherever the laptop is', () => {
   assert.equal(formatIsoDay('2026-11-09'), 'Montag, 9. November');
   assert.equal(formatWeek('2026-11-09'), 'Woche vom 9. November');
+});
+
+test('the hour and the days around a day are Zurich\'s too', () => {
+  assert.equal(hourOf(new Date('2026-11-02T06:30:00Z')), 7);
+  assert.equal(addDays('2026-11-16', -7), '2026-11-09');
+  assert.equal(addDays('2026-03-28', 1), '2026-03-29');
 });
