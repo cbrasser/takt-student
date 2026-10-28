@@ -5,6 +5,7 @@ const ZONE = 'Europe/Zurich';
 const time = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, hour: '2-digit', minute: '2-digit' });
 const date = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const day = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long' });
+const iso = new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' });
 
 /** "08:15" */
 export function formatTime(d: Date): string {
@@ -29,4 +30,9 @@ export function formatDay(d: Date): string {
 /** "Montag, 2. November 2026": a day that is read again years later. */
 export function formatDate(d: Date): string {
   return date.format(d);
+}
+
+/** "2026-11-02": the day on the Swiss clock, as the database's dates are. */
+export function isoDay(d: Date): string {
+  return iso.format(d);
 }

@@ -37,6 +37,12 @@ export interface Course {
   teacherName: string | null;
   /** The teacher's published site, the base of material paths. */
   siteUrl: string | null;
+  /**
+   * The day of the course's first check-in or mark ("2026-09-16"), from
+   * `takt_student.check_in_start()`: lessons before it, from before check-in
+   * existed, have no attendance status. Null while the course has none.
+   */
+  checkInStart: string | null;
 }
 
 export interface Home {

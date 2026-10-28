@@ -154,6 +154,11 @@ export async function loadStudentData(): Promise<StudentData> {
   if (checkIns.error) throw checkIns.error;
   if (tickets.error) throw tickets.error;
   if (notes.error) throw notes.error;
+  // Each course's check-in start: the day only, as a student reads no one else's check-in.
+  const starts = await Promise.all(
+    courses.data.map((c) => supabase.rpc('check_in_start', { teacher: c.teacher_id, course: c.id })),
+  );
+  for (const s of starts) if (s.error) throw s.error;
   const noteOf = new Map(notes.data.map((n) => [lessonKey({ teacherId: n.teacher_id, id: n.lesson_id }), n.note]));
   return {
     lessons: lessons.data.map((r) => ({
@@ -171,11 +176,12 @@ export async function loadStudentData(): Promise<StudentData> {
       materials: materialRefs(r.materials),
       review: r.review?.length === 2 ? [r.review[0], r.review[1]] : null,
     })),
-    courses: courses.data.map((r) => ({
+    courses: courses.data.map((r, i) => ({
       teacherId: r.teacher_id,
       id: r.id,
       name: r.name,
       teacherName: r.teacher_name,
+      checkInStart: starts[i].data ?? null,
       siteUrl: r.site_url,
     })),
     checkIns: checkIns.data.map(checkInOf),
