@@ -10,7 +10,17 @@
   import { assessmentKey, assessmentsOn, nextAssessments, upcoming as upcomingOf, type Assessment } from './lib/assessments';
   import type { ExitTicket } from './lib/exitTicket';
   import { exitNotice, exitNotices } from './lib/exitNotice';
-  import { exitNoticeOn, keepSeenOpen, notify, seenOpen, setExitNoticeOn } from './lib/notifications';
+  import {
+    keepSeenOpen,
+    keepSentReminders,
+    noticeSwitches,
+    notify,
+    seenOpen,
+    sentReminders,
+    setNoticeOn,
+    type NoticeType,
+  } from './lib/notifications';
+  import { reminderNotice, reminders } from './lib/reminders';
   import { formatTime } from './lib/format';
   import Login from './lib/Login.svelte';
   import LessonView from './lib/LessonView.svelte';
@@ -41,7 +51,7 @@
     | { kind: 'assessment'; key: string }
     | null
   >(null);
-  let noticeOn = $state(exitNoticeOn());
+  let switches = $state(noticeSwitches());
 
   const userId = $derived(session?.user.id ?? null);
 
@@ -137,23 +147,28 @@
     });
   });
 
-  // What the polling read: "Exit-Ticket ist offen" once per lesson, in the desktop app.
+  // What the polling read, in the desktop app: "Exit-Ticket ist offen" once
+  // per lesson, and the reminders of Prüfungen and Abgaben once per
+  // assessment and date.
   $effect(() => {
     const d = data;
     const user = userId;
     const t = now;
-    const on = noticeOn;
+    const on = switches;
     if (!desktop || !d || !user) return;
     untrack(() => {
-      const { due, seen } = exitNotices(d.lessons, d.exitTickets, seenOpen(user), on, t);
+      const { due, seen } = exitNotices(d.lessons, d.exitTickets, seenOpen(user), on.exit, t);
       keepSeenOpen(user, seen);
       for (const l of due) void notify(exitNotice(l, courses.get(courseKey(l))));
+      const remind = reminders(d.assessments, sentReminders(user), on, t);
+      keepSentReminders(user, remind.sent);
+      for (const r of remind.due) void notify(reminderNotice(r, courses.get(courseKey(r.assessment))));
     });
   });
 
-  function switchExitNotice(on: boolean) {
-    setExitNoticeOn(on);
-    noticeOn = on;
+  function switchNotice(type: NoticeType, on: boolean) {
+    setNoticeOn(type, on);
+    switches = { ...switches, [type]: on };
   }
 
   // The page takes the hue of the course on show: a lesson's, its Verlauf's, its Demnächst's or an assessment's.
@@ -222,7 +237,7 @@
     {/if}
 
     {#if opened?.kind === 'settings'}
-      <Settings on={noticeOn} onchange={switchExitNotice} />
+      <Settings {switches} onchange={switchNotice} />
     {:else if !data || !lessonsNow}
       {#if !offline}<p class="muted">Lädt …</p>{/if}
     {:else if data.lessons.length === 0}
