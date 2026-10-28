@@ -1,10 +1,10 @@
 // The student app, end to end, against the local Supabase stack: Lea signs
 // in and her current lesson opens by itself, with its topic, goals and
-// material links and without the teacher's cue; the session survives a
-// restart and sign-out clears it; Liam, in no Takt course, sees
-// "Noch keine Lektionen".
+// material links and without the teacher's cue; she checks in with "Bereit"
+// and is on time; the session survives a restart and sign-out clears it;
+// Liam, in no Takt course, sees "Noch keine Lektionen".
 //
-// The test plants its own lesson, started a few minutes ago, in the seeded
+// The test plants its own lesson, started a minute or two ago, in the seeded
 // course INF-3a (Anna's, with Lea on the roster), so it doesn't depend on
 // when the seed last ran.
 import { expect, test, type Page } from '@playwright/test';
@@ -47,10 +47,10 @@ test.beforeAll(async () => {
   if (error || !course) throw new Error(`the seed isn't loaded (pnpm db:reset in cbra-platform): ${error?.message}`);
   teacherId = course.teacher_id;
 
-  // Started four or five minutes ago, off the seed's five-minute grid so the
-  // id never meets a seeded lesson; later than the seed's "now" lesson, so
-  // it is the one that opens.
-  const start = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 4 * 60_000);
+  // Started a minute or two ago, inside the default five-minute cutoff, off
+  // the seed's five-minute grid so the id never meets a seeded lesson; later
+  // than the seed's "now" lesson, so it is the one that opens.
+  const start = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 60_000);
   if (start.getMinutes() % 5 === 0) start.setMinutes(start.getMinutes() - 1);
   const { date, time } = zurichStamp(start);
   lessonId = `${date}_${time}_${COURSE}`;
@@ -116,6 +116,19 @@ test('Lea signs in and her current lesson opens by itself, without the cue', asy
   const text = await page.locator('body').innerText();
   expect(text).not.toContain(CUE);
   expect(text).not.toContain(NOTES);
+});
+
+test('Lea checks in with "Bereit" and is on time', async ({ page }) => {
+  await signIn(page, 'lea@seed.test');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(TOPIC);
+
+  await page.getByRole('button', { name: 'Bereit' }).click();
+  await expect(page.getByRole('status')).toHaveText(/^Eingecheckt \d\d:\d\d · pünktlich$/);
+  await expect(page.getByRole('button', { name: 'Bereit' })).toHaveCount(0);
+
+  // Read back from the server, not just the button's answer.
+  await page.reload();
+  await expect(page.getByRole('status')).toHaveText(/^Eingecheckt \d\d:\d\d · pünktlich$/);
 });
 
 test('the session survives a restart, and signing out clears it', async ({ context }) => {

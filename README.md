@@ -50,12 +50,14 @@ The release build (`npm run build:release`, Vite's `release` mode) talks to the 
 - **Sign-in:** email and password of the student's account (the one they made on the account site for CBRATest). The session is kept in the app's own storage (the webview's local storage), not the OS keychain, so an unsigned update doesn't ask for keychain access again. Signing out clears it on this device.
 - **Home:** the lesson from 10 minutes before its start until its end opens by itself; back to back, the later one. Otherwise the overview shows the next lesson of each course and the last one. "Übersicht" switches to it at any time.
 - **Lesson:** date, time and course, the course's hue as the page; the topic as the title ("Noch kein Thema" until the teacher plans it); goals, "Wo wir stehen", homework and material links; "Letzte Lektion" with the previous lesson of the course. Material paths are joined to the course's published site URL; full URLs stay as they are; anything else isn't linked.
-- **Freshness:** the lessons are read again on start, when the window gets focus, and every 15 minutes. Times are always Europe/Zurich.
+- **Check-in:** "Bereit" shows from 10 minutes before the start until the end, by the device's clock. The server decides (`takt_student.check_in()`): it stamps its own time and refuses a student who isn't enrolled or a time outside the window, and the app shows why. Once checked in, the button becomes "Eingecheckt 08:17 · pünktlich" or "· zu spät" (`takt_student.status()`, by the teacher's cutoff).
+- **Freshness:** the lessons and check-ins are read again on start, when the window gets focus, every minute while a check-in window is open and every 15 minutes otherwise. Times are always Europe/Zurich.
 
 ## Where things live
 
 - `src/lib/lessons.ts`: which lesson is current, next and last, the previous lesson, material URLs, course hues. Pure, tested in `tests/`.
-- `src/lib/supabase.ts`: the connection, sign-in and the reads from `takt_student`.
+- `src/lib/checkin.ts`: what the "Bereit" button shows, refusal reasons, when to re-read. Pure, tested in `tests/`.
+- `src/lib/supabase.ts`: the connection, sign-in, the reads from `takt_student` and the check-in.
 - `src/lib/config.ts`: which stack and which account site a build talks to, local or release.
 - `src/lib/Update.svelte`: the update prompt of the release desktop app.
 - `installieren.html`, `src/install.ts`, `src/install.css`: the install page.

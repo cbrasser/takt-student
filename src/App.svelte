@@ -5,12 +5,12 @@
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { config, loadStudentData, onSession, signOut, type StudentData } from './lib/supabase';
   import { courseHues, courseKey, home, lessonKey, previousLesson, type Lesson } from './lib/lessons';
+  import { refreshDue, type CheckIn } from './lib/checkin';
   import { formatTime } from './lib/format';
   import Login from './lib/Login.svelte';
   import LessonView from './lib/LessonView.svelte';
   import Overview from './lib/Overview.svelte';
 
-  const REFRESH_MS = 15 * 60_000;
   const CLOCK_MS = 30_000;
 
   /** Undefined until the stored session has been read. */
@@ -19,6 +19,7 @@
   let loadedAt = $state<Date | null>(null);
   let offline = $state(false);
   let now = $state(new Date());
+  let loading = false;
   /** What the student opened by hand; null follows home (the current lesson, else the overview). */
   let opened = $state<{ kind: 'overview' } | { kind: 'lesson'; key: string } | null>(null);
 
@@ -36,11 +37,19 @@
     return lessonsNow?.current ?? null;
   });
   const currentKey = $derived(lessonsNow?.current ? lessonKey(lessonsNow.current) : null);
+  const checkIns = $derived(new Map((data?.checkIns ?? []).map((c) => [lessonKey({ teacherId: c.teacherId, id: c.lessonId }), c])));
+
+  function checkedIn(c: CheckIn) {
+    if (!data) return;
+    const others = data.checkIns.filter((x) => x.teacherId !== c.teacherId || x.lessonId !== c.lessonId);
+    data = { ...data, checkIns: [...others, c] };
+  }
 
   async function refresh() {
     now = new Date();
     const user = userId;
-    if (!user) return;
+    if (!user || loading) return;
+    loading = true;
     try {
       const fresh = await loadStudentData();
       // Signed out or switched while the request ran: drop it.
@@ -50,7 +59,15 @@
       offline = false;
     } catch {
       if (user === userId) offline = true;
+    } finally {
+      loading = false;
     }
+  }
+
+  /** The clock ticks; re-read every minute while a check-in window is open, every 15 otherwise. */
+  function tick() {
+    now = new Date();
+    if (refreshDue(data?.lessons ?? [], loadedAt, now)) void refresh();
   }
 
   // A different student (or none): start over, then load.
@@ -94,14 +111,12 @@
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refresh();
     };
-    const refreshTimer = setInterval(refresh, REFRESH_MS);
-    const clock = setInterval(() => (now = new Date()), CLOCK_MS);
+    const clock = setInterval(tick, CLOCK_MS);
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', onVisible);
     document.addEventListener('click', openExternally);
     return () => {
       stop();
-      clearInterval(refreshTimer);
       clearInterval(clock);
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', onVisible);
@@ -138,7 +153,16 @@
         <p class="lede">Sobald deine Lehrperson Lektionen für deine Kurse plant, erscheinen sie hier.</p>
       </section>
     {:else if shown}
-      <LessonView lesson={shown} course={courses.get(courseKey(shown))} previous={previousLesson(data.lessons, shown)} />
+      {#key lessonKey(shown)}
+        <LessonView
+          lesson={shown}
+          course={courses.get(courseKey(shown))}
+          previous={previousLesson(data.lessons, shown)}
+          checkIn={checkIns.get(lessonKey(shown))}
+          {now}
+          oncheckin={checkedIn}
+        />
+      {/key}
     {:else}
       <Overview home={lessonsNow} {courses} {hues} onopen={(l) => (opened = { kind: 'lesson', key: lessonKey(l) })} />
     {/if}

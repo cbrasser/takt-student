@@ -12,11 +12,11 @@ Every colour, radius, shadow and space is a CSS variable in `src/app.css`, redef
 
 ## Decisions live in pure modules, tested with `node:test`
 
-Which lesson is current, next or last, and what a material path links to, are decided in `src/lib/lessons.ts` from plain data and a time passed in. A view never compares times or builds a URL itself. A new rule of that kind lands in a pure module with its test.
+Which lesson is current, next or last, and what a material path links to, are decided in `src/lib/lessons.ts` from plain data and a time passed in; what the "Bereit" button shows and when the app re-reads, in `src/lib/checkin.ts`. A view never compares times or builds a URL itself. A new rule of that kind lands in a pure module with its test.
 
 ## Data goes through `src/lib/supabase.ts`
 
-Views get plain `Lesson` and `Course` values; only `src/lib/supabase.ts` talks to Supabase. The app reads `takt_student` only, never `takt`, and writes nothing there: row-level security is the guard, and the app never relies on its own filtering to hide another class.
+Views get plain `Lesson` and `Course` values; only `src/lib/supabase.ts` talks to Supabase. The app reads `takt_student` only, never `takt`, and writes only through `takt_student.check_in()`, which stamps the server's time: row-level security is the guard, and the app never relies on its own filtering to hide another class.
 
 ## Only the release build talks to production
 
