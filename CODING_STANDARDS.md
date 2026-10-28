@@ -12,7 +12,7 @@ Every colour, radius, shadow and space is a CSS variable in `src/app.css`, redef
 
 ## Decisions live in pure modules, tested with `node:test`
 
-Which lesson is current, next or last, and what a material path links to, are decided in `src/lib/lessons.ts` from plain data and a time passed in; what the "Bereit" button shows and when the app re-reads, in `src/lib/checkin.ts`; whether the exit ticket is open and what it sends, in `src/lib/exitTicket.ts`. A view never compares times or builds a URL itself. A new rule of that kind lands in a pure module with its test.
+Which lesson is current, next or last, and what a material path links to, are decided in `src/lib/lessons.ts` from plain data and a time passed in; what the "Bereit" button shows and when the app re-reads, in `src/lib/checkin.ts`; whether the exit ticket is open and what it sends, in `src/lib/exitTicket.ts`; for which lessons "Exit-Ticket ist offen" fires, in `src/lib/exitNotice.ts`. A view never compares times or builds a URL itself. A new rule of that kind lands in a pure module with its test.
 
 ## Data goes through `src/lib/supabase.ts`
 
@@ -24,7 +24,7 @@ A local build reaches only a local stack (`http://127.0.0.1:54321` by default, `
 
 ## The session stays in the app's own storage
 
-The login is kept in the webview's local storage, never the OS keychain: unsigned builds would ask for keychain access after every update. Signing out removes it from this device.
+The login is kept in the webview's local storage, never the OS keychain: unsigned builds would ask for keychain access after every update. Signing out removes it from this device. Settings, such as the notification switch, live there too.
 
 ## Times are Swiss
 

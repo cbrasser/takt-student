@@ -151,21 +151,6 @@
     box-shadow: none;
   }
 
-  .choice {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s-2);
-    min-height: var(--tap);
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .choice input {
-    width: var(--s-5);
-    height: var(--s-5);
-    accent-color: var(--ink);
-  }
-
   .rating {
     border: 0;
     padding: 0;

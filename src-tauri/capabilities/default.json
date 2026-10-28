@@ -1,7 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "The main window; links open in the browser, and it updates itself once the student agrees",
+  "description": "The main window; links open in the browser, it updates itself once the student agrees, and it notifies when an exit ticket opens",
   "windows": ["main"],
-  "permissions": ["core:default", "opener:default", "updater:default", "process:allow-restart"]
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "updater:default",
+    "process:allow-restart",
+    "notification:allow-is-permission-granted",
+    "notification:allow-request-permission",
+    "notification:allow-notify"
+  ]
 }

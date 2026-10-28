@@ -3,8 +3,9 @@
 //! account site and to materials open in the browser (plugin-opener). The
 //! release build looks for updates from the web app (src/lib/Update.svelte),
 //! which installs one through plugin-updater and restarts through
-//! plugin-process. The Verlauf's Markdown export is saved through the
-//! system's save dialog (export_save).
+//! plugin-process. "Exit-Ticket ist offen" is an OS notification
+//! (plugin-notification), sent from the web app's polling. The Verlauf's
+//! Markdown export is saved through the system's save dialog (export_save).
 
 use tauri::AppHandle;
 
@@ -30,6 +31,7 @@ async fn export_save(app: AppHandle, name: String, text: String) -> Result<bool,
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
