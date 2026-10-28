@@ -24,6 +24,8 @@ export interface Lesson {
   standing: string[];
   homework: string;
   materials: MaterialRef[];
+  /** The anonymous review's two prompts; null when the lesson has none. */
+  review: [string, string] | null;
 }
 
 export interface Course {

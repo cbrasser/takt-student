@@ -11,6 +11,7 @@
     type ExitTicketState,
   } from './exitTicket';
   import type { Lesson } from './lessons';
+  import ReviewPart from './ReviewPart.svelte';
   import { handIn } from './supabase';
   import TicketAnswers from './TicketAnswers.svelte';
 
@@ -135,89 +136,11 @@
       <div class="answers"><TicketAnswers {ticket} /></div>
     {/if}
   {/if}
+
+  <ReviewPart {lesson} {exit} />
 </section>
 
 <style>
-  .text-input {
-    font: inherit;
-    font-weight: 600;
-    padding: var(--s-2) var(--s-3);
-    resize: vertical;
-  }
-
-  .text-input[disabled] {
-    color: var(--ink-3);
-    border-color: var(--ink-3);
-    box-shadow: none;
-  }
-
-  .rating {
-    border: 0;
-    padding: 0;
-    margin: var(--s-2) 0 0;
-    display: grid;
-    gap: var(--s-2);
-  }
-
-  .rating legend {
-    font-weight: 700;
-    padding: 0;
-    margin-bottom: var(--s-2);
-  }
-
-  .scale {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-  }
-
-  .step {
-    position: relative;
-    cursor: pointer;
-  }
-
-  .step input {
-    position: absolute;
-    opacity: 0;
-    inset: 0;
-    margin: 0;
-    cursor: pointer;
-  }
-
-  .step span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--tap);
-    min-height: var(--tap);
-    border: var(--line);
-    border-radius: var(--r-control);
-    background: var(--paper);
-    box-shadow: var(--shadow-sm);
-    font-weight: 800;
-  }
-
-  .step input:checked + span {
-    background: var(--ink);
-    color: var(--paper);
-  }
-
-  .step input:focus-visible + span {
-    outline: var(--focus);
-    outline-offset: var(--line-w);
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s-3) var(--s-4);
-  }
-
-  .handed-in {
-    font-weight: 700;
-  }
-
   .answers {
     margin-top: var(--s-4);
   }

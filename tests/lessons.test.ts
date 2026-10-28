@@ -19,6 +19,7 @@ function lesson(courseId: string, start: string, minutes = 45, extra: Partial<Le
     standing: [],
     homework: '',
     materials: [],
+    review: null,
     ...extra,
   };
 }

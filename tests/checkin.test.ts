@@ -19,6 +19,7 @@ const lesson: Lesson = {
   standing: [],
   homework: '',
   materials: [],
+  review: null,
 };
 const nextWeek: Lesson = {
   ...lesson,
