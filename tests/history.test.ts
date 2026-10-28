@@ -10,7 +10,8 @@ import type { Course, Lesson } from '../src/lib/lessons.ts';
 
 const MIN = 60_000;
 
-const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null };
+// Check-in started before every lesson below, unless a test says otherwise.
+const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null, checkInStart: '2026-11-01' };
 
 /** A lesson of the course, 08:15–09:00 Zurich time on the given November day. */
 function lesson(day: number, extra: Partial<Lesson> = {}): Lesson {
@@ -249,4 +250,50 @@ test('the export of a course without past lessons says so', () => {
 test('the export is named after the course, safe as a file name', () => {
   assert.equal(exportName(course), 'Verlauf 3a · Informatik.md');
   assert.equal(exportName({ ...course, name: 'BG/MA: "Mathe"?' }), 'Verlauf BG-MA- -Mathe--.md');
+});
+
+test('before the course\'s check-in start a lesson has no status: not "verpasst", no ticket owed', () => {
+  const backfilled = lesson(2);
+  const startDay = lesson(4);
+  const after = lesson(9);
+  const now = new Date('2026-11-30T12:00:00+01:00');
+  // Check-in started with a mark on 4 November.
+  const started = { ...course, checkInStart: '2026-11-04' };
+  const history = courseHistory([backfilled, startDay, after], started, [checkIn(startDay, 'present')], [], now);
+  assert.deepEqual(
+    history.map((e) => [e.lesson.id, e.attendance, e.ticket, ticketMark(e)]),
+    [
+      [after.id, 'missed', 'not_required', null],
+      [startDay.id, 'present', 'missing', { label: 'Exit-Ticket fehlt', missing: true }],
+      [backfilled.id, null, 'not_required', null],
+    ],
+  );
+});
+
+test('before the start, her own ticket still shows', () => {
+  const backfilled = lesson(2);
+  const mine = ticket(backfilled);
+  const [entry] = courseHistory([backfilled], { ...course, checkInStart: '2026-11-04' }, [], [mine], new Date('2026-11-30T12:00:00+01:00'));
+  assert.equal(entry.attendance, null);
+  assert.equal(entry.handedIn, mine);
+  assert.deepEqual(ticketMark(entry), { label: 'Abgegeben 08:55', missing: false });
+});
+
+test('a course without check-ins has no status anywhere', () => {
+  const l = lesson(2);
+  const [entry] = courseHistory([l], { ...course, checkInStart: null }, [], [], new Date('2026-11-30T12:00:00+01:00'));
+  assert.equal(entry.attendance, null);
+  assert.equal(entry.ticket, 'not_required');
+});
+
+test('the start is the lesson\'s day in Zurich: 00:30 on 4 November is on it, though still 3 November in UTC', () => {
+  const night = lesson(4, { startsAt: new Date('2026-11-04T00:30:00+01:00'), endsAt: new Date('2026-11-04T01:15:00+01:00') });
+  const [entry] = courseHistory([night], { ...course, checkInStart: '2026-11-04' }, [], [], new Date('2026-11-30T12:00:00+01:00'));
+  assert.equal(entry.attendance, 'missed');
+});
+
+test('the export says no status before the start', () => {
+  const backfilled = lesson(2, { topic: 'Caesar' });
+  const history = courseHistory([backfilled], { ...course, checkInStart: '2026-11-04' }, [], [], new Date('2026-11-30T12:00:00+01:00'));
+  assert.match(historyMarkdown(course, history), /## Montag, 2\. November 2026 · Caesar\n\n08:15–09:00\n/);
 });

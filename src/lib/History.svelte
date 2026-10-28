@@ -45,10 +45,14 @@
           <article class="leaf lesson" class:missed={e.attendance === 'missed'} aria-labelledby="history-lesson-{i}">
             <p class="caption muted">{formatWhen(e.lesson.startsAt, e.lesson.endsAt)}</p>
             <h2 class="topic" id="history-lesson-{i}">{e.lesson.topic || 'Noch kein Thema'}</h2>
-            <p class="marks">
-              <span class="mark" class:mark-missed={e.attendance === 'missed'}>{attendanceLabel(e.attendance)}</span>
-              {#if mark}<span class="mark" class:mark-missing={mark.missing}>{mark.label}</span>{/if}
-            </p>
+            {#if e.attendance || mark}
+              <p class="marks">
+                {#if e.attendance}
+                  <span class="mark" class:mark-missed={e.attendance === 'missed'}>{attendanceLabel(e.attendance)}</span>
+                {/if}
+                {#if mark}<span class="mark" class:mark-missing={mark.missing}>{mark.label}</span>{/if}
+              </p>
+            {/if}
 
             {#if e.lesson.homework}
               <h3 class="group">Hausaufgaben</h3>

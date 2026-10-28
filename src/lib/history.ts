@@ -5,7 +5,7 @@
  */
 import type { CheckIn } from './checkin.ts';
 import { handedInLabel, type ExitTicket } from './exitTicket.ts';
-import { formatDate, formatTime, formatTimes } from './format.ts';
+import { formatDate, formatTime, formatTimes, isoDay } from './format.ts';
 import { courseKey, exitClosesAt, lessonKey, type Course, type Lesson } from './lessons.ts';
 import { ticketKind, ticketStatus, type TicketStatus } from './ticketStatus.ts';
 
@@ -37,7 +37,8 @@ export type HistoryTicket = TicketStatus | 'open';
 
 export interface HistoryEntry {
   lesson: Lesson;
-  attendance: Attendance;
+  /** Null before the course's check-in start: no status, not even "verpasst". */
+  attendance: Attendance | null;
   ticket: HistoryTicket;
   /** What the student handed in, both parts, owed or not; null when nothing. */
   handedIn: ExitTicket | null;
@@ -48,7 +49,11 @@ function attendanceOf(checkIn: CheckIn | undefined): Attendance {
   return s === 'on_time' || s === 'late' || s === 'excused' || s === 'present' ? s : 'missed';
 }
 
-/** The course's lessons that have ended by `now`, newest first. */
+/**
+ * The course's lessons that have ended by `now`, newest first. Before the
+ * course's check-in start a lesson has no status and owes no ticket, as
+ * Takt's course record doesn't count it.
+ */
 export function courseHistory(lessons: Lesson[], course: Course, checkIns: CheckIn[], tickets: ExitTicket[], now: Date): HistoryEntry[] {
   const key = courseKey(course);
   const checkInOf = new Map(checkIns.map((c) => [lessonKey({ teacherId: c.teacherId, id: c.lessonId }), c]));
@@ -59,13 +64,17 @@ export function courseHistory(lessons: Lesson[], course: Course, checkIns: Check
     .map((lesson): HistoryEntry => {
       const checkIn = checkInOf.get(lessonKey(lesson));
       const exitTicket = ticketOf.get(lessonKey(lesson));
+      const handedIn = exitTicket?.submittedAt ? exitTicket : null;
+      if (course.checkInStart === null || isoDay(lesson.startsAt) < course.checkInStart) {
+        return { lesson, attendance: null, ticket: 'not_required', handedIn };
+      }
       const status = ticketStatus(checkIn?.status ?? 'missing', exitTicket && ticketKind(exitTicket.submittedAt !== null, exitTicket.excused));
       const closed = exitClosesAt(lesson).getTime() <= now.getTime();
       return {
         lesson,
         attendance: attendanceOf(checkIn),
         ticket: status === 'missing' && !closed ? 'open' : status,
-        handedIn: exitTicket?.submittedAt ? exitTicket : null,
+        handedIn,
       };
     });
 }
@@ -92,7 +101,8 @@ export function ticketMark(e: HistoryEntry): { label: string; missing: boolean }
 
 /** "08:15–09:00 · pünktlich · Abgegeben 08:52": when, her status and her ticket's. */
 function entryLine(e: HistoryEntry): string {
-  return [formatTimes(e.lesson.startsAt, e.lesson.endsAt), attendanceLabel(e.attendance), ticketMark(e)?.label].filter(Boolean).join(' · ');
+  const attendance = e.attendance && attendanceLabel(e.attendance);
+  return [formatTimes(e.lesson.startsAt, e.lesson.endsAt), attendance, ticketMark(e)?.label].filter(Boolean).join(' · ');
 }
 
 /** Free text as a quote, line by line, so nothing the student wrote turns into a heading of the export. */

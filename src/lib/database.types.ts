@@ -288,6 +288,33 @@ export type Database = {
         }
         Relationships: []
       }
+      school_years: {
+        Row: {
+          doc: Json
+          ends_on: string | null
+          id: string
+          starts_on: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          doc: Json
+          ends_on?: string | null
+          id: string
+          starts_on?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          doc?: Json
+          ends_on?: string | null
+          id?: string
+          starts_on?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           email: string
@@ -333,6 +360,7 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          review_prompts: string[]
           roster_source: string
           site_url: string | null
           updated_at: string
@@ -343,6 +371,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          review_prompts?: string[]
           roster_source?: string
           site_url?: string | null
           updated_at?: string
@@ -353,6 +382,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          review_prompts?: string[]
           roster_source?: string
           site_url?: string | null
           updated_at?: string
@@ -670,6 +700,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      check_in_start: {
+        Args: { course: string; teacher: string }
+        Returns: string
       }
       copy_courses: { Args: { teacher: string }; Returns: undefined }
       copy_lesson: {

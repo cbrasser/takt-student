@@ -4,7 +4,9 @@
 // nothing, Mia came late and her missing ticket is excused. Each sees only
 // their own status and ticket there; Lea saves her Verlauf as Markdown.
 //
-// The test also plants a lesson two weeks ago, which nobody checked in to,
+// The seed's lesson of two weeks ago predates the course's first check-in, as
+// a lesson Takt backfilled would: it has no status. The test also plants a
+// lesson three days ago, after check-in started, which nobody checked in to,
 // so Lea sees a missed lesson ("verpasst") too.
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
@@ -15,6 +17,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const PASSWORD = 'devpassword';
 const COURSE = 'seed-inf-3a';
 const SEED_TOPIC = 'Caesar-Verschlüsselung';
+const BACKFILLED_TOPIC = 'Geheimschriften im Alltag';
 const LEA_NOTE = 'Caesar verschiebt jeden Buchstaben um gleich viele Stellen.';
 const LEA_UNCLEAR = 'Wie knackt man Caesar, ohne alle 25 Schlüssel auszuprobieren?';
 
@@ -47,9 +50,9 @@ test.beforeAll(async () => {
   teacherId = course.teacher_id;
   courseName = course.name;
 
-  // Two weeks ago, off the seed's five-minute grid so the id never meets a
+  // Three days ago, off the seed's five-minute grid so the id never meets a
   // seeded lesson.
-  const start = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 14 * 24 * 60 * 60_000);
+  const start = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 3 * 24 * 60 * 60_000);
   if (start.getMinutes() % 5 === 0) start.setMinutes(start.getMinutes() - 1);
   const { date, time } = zurichStamp(start);
   missedId = `${date}_${time}_${COURSE}`;
@@ -117,7 +120,16 @@ test('Lea sees her past lessons with her status and her ticket, newest first', a
   await expect(missed).not.toContainText('Exit-Ticket');
 
   const topics = await page.getByRole('article').getByRole('heading', { level: 2 }).allTextContents();
-  expect(topics.indexOf(SEED_TOPIC)).toBeLessThan(topics.indexOf(MISSED_TOPIC));
+  expect(topics.indexOf(MISSED_TOPIC)).toBeLessThan(topics.indexOf(SEED_TOPIC));
+});
+
+test('a lesson from before check-in started shows no status in Lea\'s Verlauf', async ({ page }) => {
+  await openHistory(page, 'lea@seed.test');
+  const backfilled = pastLesson(page, BACKFILLED_TOPIC);
+  await expect(backfilled).toBeVisible();
+  await expect(backfilled).not.toContainText('verpasst');
+  await expect(backfilled).not.toContainText('Exit-Ticket');
+  await expect(backfilled).not.toContainText('pünktlich');
 });
 
 test('Lea saves her Verlauf as Markdown', async ({ page }) => {
@@ -135,8 +147,11 @@ test('Lea saves her Verlauf as Markdown', async ({ page }) => {
   expect(text).toContain(`> ${LEA_UNCLEAR}`);
   expect(text).toContain(`· ${MISSED_TOPIC}\n`);
   expect(text).toMatch(/· verpasst\n/);
+  // Before check-in started, no status.
+  expect(text).toMatch(new RegExp(`· ${BACKFILLED_TOPIC}\\n\\n\\d\\d:\\d\\d–\\d\\d:\\d\\d\\n`));
   // Oldest first, as notes are read.
-  expect(text.indexOf(MISSED_TOPIC)).toBeLessThan(text.indexOf(SEED_TOPIC));
+  expect(text.indexOf(BACKFILLED_TOPIC)).toBeLessThan(text.indexOf(SEED_TOPIC));
+  expect(text.indexOf(SEED_TOPIC)).toBeLessThan(text.indexOf(MISSED_TOPIC));
 });
 
 test('Noah, present without a ticket, sees "Exit-Ticket fehlt", and nothing of Lea\'s', async ({ page }) => {
