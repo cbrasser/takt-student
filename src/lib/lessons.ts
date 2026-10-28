@@ -51,11 +51,21 @@ export function courseKey(x: { teacherId: string; courseId?: string; id: string 
 }
 
 /** A lesson is named by its teacher and its id. */
-export function lessonKey(l: Lesson): string {
+export function lessonKey(l: { teacherId: string; id: string }): string {
   return `${l.teacherId}/${l.id}`;
 }
 
-const opensAt = (l: Lesson) => l.startsAt.getTime() - OPENS_BEFORE_MS;
+/** When a lesson's window opens: it opens by itself, and "Bereit" shows. */
+export function opensAt(l: Lesson): Date {
+  return new Date(l.startsAt.getTime() - OPENS_BEFORE_MS);
+}
+
+/** Is the lesson's window open, from `opensAt` until its end? */
+export function isOpen(l: Lesson, now: Date): boolean {
+  const t = now.getTime();
+  return opensAt(l).getTime() <= t && t < l.endsAt.getTime();
+}
+
 const byStart = (a: Lesson, b: Lesson) => a.startsAt.getTime() - b.startsAt.getTime();
 
 export function home(lessons: Lesson[], now: Date): Home {
@@ -64,10 +74,10 @@ export function home(lessons: Lesson[], now: Date): Home {
 
   // Back to back, the next lesson opens before the one before it ends; the
   // later one is the one to get ready for.
-  const open = sorted.filter((l) => opensAt(l) <= t && t < l.endsAt.getTime());
+  const open = sorted.filter((l) => isOpen(l, now));
   const next = new Map<string, Lesson>();
   for (const l of sorted) {
-    if (opensAt(l) > t && !next.has(courseKey(l))) next.set(courseKey(l), l);
+    if (opensAt(l).getTime() > t && !next.has(courseKey(l))) next.set(courseKey(l), l);
   }
   const ended = sorted.filter((l) => l.endsAt.getTime() <= t);
   return { current: open[open.length - 1] ?? null, next: [...next.values()], last: ended[ended.length - 1] ?? null };

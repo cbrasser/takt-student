@@ -37,7 +37,7 @@
     return lessonsNow?.current ?? null;
   });
   const currentKey = $derived(lessonsNow?.current ? lessonKey(lessonsNow.current) : null);
-  const checkIns = $derived(new Map((data?.checkIns ?? []).map((c) => [`${c.teacherId}/${c.lessonId}`, c])));
+  const checkIns = $derived(new Map((data?.checkIns ?? []).map((c) => [lessonKey({ teacherId: c.teacherId, id: c.lessonId }), c])));
 
   function checkedIn(c: CheckIn) {
     if (!data) return;

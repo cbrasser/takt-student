@@ -5,17 +5,23 @@
  * whether a check-in counts, and at what time.
  */
 import { formatTime } from './format.ts';
-import { OPENS_BEFORE_MS, type Lesson } from './lessons.ts';
+import { isOpen, opensAt, type Lesson } from './lessons.ts';
 
 /** As `takt_student.status()` gives it. */
-export type CheckInStatus = 'on_time' | 'late' | 'excused' | 'present' | 'missing';
+export const STATUSES = ['on_time', 'late', 'excused', 'present', 'missing'] as const;
+export type CheckInStatus = (typeof STATUSES)[number];
+
+/** A status read from the server, or null for anything this app doesn't know. */
+export function checkInStatus(s: string | null): CheckInStatus | null {
+  return STATUSES.find((x) => x === s) ?? null;
+}
 
 export interface CheckIn {
   teacherId: string;
   lessonId: string;
   /** The server's time; null when the teacher only marked the student. */
   checkedInAt: Date | null;
-  status: CheckInStatus;
+  status: CheckInStatus | null;
 }
 
 export type CheckInState =
@@ -23,37 +29,31 @@ export type CheckInState =
   | { kind: 'closed' }
   /** "Bereit" */
   | { kind: 'ready' }
-  | { kind: 'checked-in'; checkIn: CheckIn };
+  | { kind: 'checked-in'; at: Date; status: CheckInStatus | null };
 
 /** How often the app re-reads while a check-in window is open, and otherwise. */
 export const REFRESH_OPEN_MS = 60_000;
 export const REFRESH_MS = 15 * 60_000;
 
-function isOpen(lesson: Lesson, now: Date): boolean {
-  const t = now.getTime();
-  return lesson.startsAt.getTime() - OPENS_BEFORE_MS <= t && t < lesson.endsAt.getTime();
-}
-
+/** The teacher's marks belong to the panel; here only the student's own check-in counts. */
 export function checkInState(lesson: Lesson, checkIn: CheckIn | undefined, now: Date): CheckInState {
-  if (checkIn && (checkIn.checkedInAt || checkIn.status === 'excused' || checkIn.status === 'present')) {
-    return { kind: 'checked-in', checkIn };
-  }
+  if (checkIn?.checkedInAt) return { kind: 'checked-in', at: checkIn.checkedInAt, status: checkIn.status };
   return isOpen(lesson, now) ? { kind: 'ready' } : { kind: 'closed' };
 }
 
-/** "Eingecheckt 08:17 · pünktlich", or the teacher's mark. */
-export function checkInLabel(c: CheckIn): string {
-  if (c.status === 'excused') return 'Entschuldigt';
-  if (c.status === 'present') return 'Als anwesend eingetragen';
-  const how = c.status === 'on_time' ? 'pünktlich' : 'zu spät';
-  return c.checkedInAt ? `Eingecheckt ${formatTime(c.checkedInAt)} · ${how}` : 'Nicht eingecheckt';
+const HOW: Partial<Record<CheckInStatus, string>> = { on_time: 'pünktlich', late: 'zu spät' };
+
+/** "Eingecheckt 08:17 · pünktlich"; just the time when a mark of the teacher's decides. */
+export function checkInLabel(at: Date, status: CheckInStatus | null): string {
+  const how = status ? HOW[status] : undefined;
+  return how ? `Eingecheckt ${formatTime(at)} · ${how}` : `Eingecheckt ${formatTime(at)}`;
 }
 
 /** Why the server refused a check-in, from the reason `takt_student.check_in()` raises. */
 export function refusal(reason: string | undefined, lesson: Lesson): string {
   switch (reason) {
     case 'check_in_not_open':
-      return `Check-in ist erst ab ${formatTime(new Date(lesson.startsAt.getTime() - OPENS_BEFORE_MS))} möglich.`;
+      return `Check-in ist erst ab ${formatTime(opensAt(lesson))} möglich.`;
     case 'check_in_closed':
       return 'Die Lektion ist schon vorbei.';
     case 'check_in_not_enrolled':

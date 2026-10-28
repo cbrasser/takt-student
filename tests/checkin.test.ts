@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkInLabel, checkInState, refreshDue, refusal, type CheckIn } from '../src/lib/checkin.ts';
+import { checkInLabel, checkInState, checkInStatus, refreshDue, refusal, type CheckIn } from '../src/lib/checkin.ts';
 import type { Lesson } from '../src/lib/lessons.ts';
 
 const MIN = 60_000;
@@ -50,22 +50,30 @@ test('no "Bereit" once the lesson has ended', () => {
 
 test('checked in, inside the window and after it', () => {
   const done = checkIn('2026-11-02T08:17:00+01:00', 'on_time');
-  assert.deepEqual(checkInState(lesson, done, at('2026-11-02T08:20:00+01:00')), { kind: 'checked-in', checkIn: done });
-  assert.deepEqual(checkInState(lesson, done, at('2026-11-02T09:30:00+01:00')), { kind: 'checked-in', checkIn: done });
+  const shown = { kind: 'checked-in', at: new Date('2026-11-02T08:17:00+01:00'), status: 'on_time' };
+  assert.deepEqual(checkInState(lesson, done, at('2026-11-02T08:20:00+01:00')), shown);
+  assert.deepEqual(checkInState(lesson, done, at('2026-11-02T09:30:00+01:00')), shown);
 });
 
-test('a row without a check-in (a cleared mark) still offers "Bereit"', () => {
+test('a teacher\'s mark without a check-in still offers "Bereit"', () => {
+  assert.deepEqual(checkInState(lesson, checkIn(null, 'excused'), at('2026-11-02T08:20:00+01:00')), { kind: 'ready' });
   assert.deepEqual(checkInState(lesson, checkIn(null, 'missing'), at('2026-11-02T08:20:00+01:00')), { kind: 'ready' });
 });
 
 test('the label says when and how it counts', () => {
-  assert.equal(checkInLabel(checkIn('2026-11-02T08:17:00+01:00', 'on_time')), 'Eingecheckt 08:17 · pünktlich');
-  assert.equal(checkInLabel(checkIn('2026-11-02T08:21:00+01:00', 'late')), 'Eingecheckt 08:21 · zu spät');
+  assert.equal(checkInLabel(new Date('2026-11-02T08:17:00+01:00'), 'on_time'), 'Eingecheckt 08:17 · pünktlich');
+  assert.equal(checkInLabel(new Date('2026-11-02T08:21:00+01:00'), 'late'), 'Eingecheckt 08:21 · zu spät');
 });
 
-test('the teacher\'s marks show as they are', () => {
-  assert.equal(checkInLabel(checkIn('2026-11-02T08:21:00+01:00', 'excused')), 'Entschuldigt');
-  assert.equal(checkInLabel(checkIn(null, 'present')), 'Als anwesend eingetragen');
+test('when a mark decides, or the status is unknown, the label says only when', () => {
+  assert.equal(checkInLabel(new Date('2026-11-02T08:21:00+01:00'), 'excused'), 'Eingecheckt 08:21');
+  assert.equal(checkInLabel(new Date('2026-11-02T08:21:00+01:00'), null), 'Eingecheckt 08:21');
+});
+
+test('a status the app doesn\'t know reads as none', () => {
+  assert.equal(checkInStatus('late'), 'late');
+  assert.equal(checkInStatus('tardy'), null);
+  assert.equal(checkInStatus(null), null);
 });
 
 test('a refusal says why', () => {

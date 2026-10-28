@@ -1,7 +1,7 @@
 <script lang="ts">
   import { checkInLabel, checkInState, refusal, type CheckIn } from './checkin';
   import type { Lesson } from './lessons';
-  import { checkIn as checkInTo } from './supabase';
+  import { checkInTo } from './supabase';
 
   let {
     lesson,
@@ -10,11 +10,11 @@
     oncheckin,
   }: { lesson: Lesson; checkIn: CheckIn | undefined; now: Date; oncheckin: (c: CheckIn) => void } = $props();
 
-  const button = $derived(checkInState(lesson, checkIn, now));
+  const offer = $derived(checkInState(lesson, checkIn, now));
   let busy = $state(false);
   let refused = $state<string | null>(null);
 
-  async function ready() {
+  async function sayReady() {
     busy = true;
     refused = null;
     const result = await checkInTo(lesson);
@@ -24,13 +24,13 @@
   }
 </script>
 
-{#if button.kind === 'ready'}
+{#if offer.kind === 'ready'}
   <div class="check-in">
-    <button class="btn btn-primary ready" disabled={busy} onclick={ready}>Bereit</button>
+    <button class="btn btn-primary ready" disabled={busy} onclick={sayReady}>Bereit</button>
     {#if refused}<p class="form-error" role="alert">{refused}</p>{/if}
   </div>
-{:else if button.kind === 'checked-in'}
-  <p class="check-in done" role="status">{checkInLabel(button.checkIn)}</p>
+{:else if offer.kind === 'checked-in'}
+  <p class="check-in done" role="status">{checkInLabel(offer.at, offer.status)}</p>
 {/if}
 
 <style>
@@ -41,7 +41,7 @@
   }
 
   .ready {
-    min-width: 10rem;
+    padding: 0 var(--s-7);
     font-size: var(--t-md);
   }
 
