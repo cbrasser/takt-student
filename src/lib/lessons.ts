@@ -15,6 +15,8 @@ export interface Lesson {
   courseId: string;
   startsAt: Date;
   endsAt: Date;
+  /** When the teacher opened the exit ticket early from Run; null until then. */
+  exitOpenedAt: Date | null;
   title: string;
   /** Empty while the teacher hasn't planned the lesson ("Noch kein Thema"). */
   topic: string;
@@ -29,16 +31,18 @@ export interface Course {
   id: string;
   /** As Takt names it: "3a · Informatik". */
   name: string;
+  /** The teacher, as the exit ticket names them; null when the server has no name. */
+  teacherName: string | null;
   /** The teacher's published site, the base of material paths. */
   siteUrl: string | null;
 }
 
 export interface Home {
-  /** The lesson whose window is open: it opens by itself. */
+  /** The lesson whose window is open, else the one whose exit ticket is: it opens by itself. */
   current: Lesson | null;
   /** The next lesson of each course whose window hasn't opened, soonest first. */
   next: Lesson[];
-  /** The lesson that ended last. */
+  /** The lesson that ended last, unless it is still current. */
   last: Lesson | null;
 }
 
@@ -66,6 +70,28 @@ export function isOpen(l: Lesson, now: Date): boolean {
   return opensAt(l).getTime() <= t && t < l.endsAt.getTime();
 }
 
+/** The exit ticket opens this long before the end, unless the teacher opens it earlier. */
+export const EXIT_OPENS_BEFORE_END_MS = 10 * 60_000;
+/** The exit ticket closes this long after the end. */
+export const EXIT_CLOSES_AFTER_END_MS = 15 * 60_000;
+
+/** When the exit ticket opens: ten minutes before the end, or the teacher's early open if that is earlier. */
+export function exitOpensAt(l: Lesson): Date {
+  const usual = l.endsAt.getTime() - EXIT_OPENS_BEFORE_END_MS;
+  return new Date(l.exitOpenedAt ? Math.min(usual, l.exitOpenedAt.getTime()) : usual);
+}
+
+/** When the exit ticket closes, and the server refuses it. */
+export function exitClosesAt(l: Lesson): Date {
+  return new Date(l.endsAt.getTime() + EXIT_CLOSES_AFTER_END_MS);
+}
+
+/** Is the lesson's exit ticket open, from `exitOpensAt` until `exitClosesAt`? */
+export function isExitOpen(l: Lesson, now: Date): boolean {
+  const t = now.getTime();
+  return exitOpensAt(l).getTime() <= t && t < exitClosesAt(l).getTime();
+}
+
 const byStart = (a: Lesson, b: Lesson) => a.startsAt.getTime() - b.startsAt.getTime();
 
 export function home(lessons: Lesson[], now: Date): Home {
@@ -73,14 +99,17 @@ export function home(lessons: Lesson[], now: Date): Home {
   const sorted = [...lessons].sort(byStart);
 
   // Back to back, the next lesson opens before the one before it ends; the
-  // later one is the one to get ready for.
+  // later one is the one to get ready for. After its end a lesson stays on
+  // while its exit ticket is open, unless the next one has opened.
   const open = sorted.filter((l) => isOpen(l, now));
+  const handingIn = sorted.filter((l) => isExitOpen(l, now));
+  const current = open[open.length - 1] ?? handingIn[handingIn.length - 1] ?? null;
   const next = new Map<string, Lesson>();
   for (const l of sorted) {
     if (opensAt(l).getTime() > t && !next.has(courseKey(l))) next.set(courseKey(l), l);
   }
-  const ended = sorted.filter((l) => l.endsAt.getTime() <= t);
-  return { current: open[open.length - 1] ?? null, next: [...next.values()], last: ended[ended.length - 1] ?? null };
+  const ended = sorted.filter((l) => l.endsAt.getTime() <= t && l !== current);
+  return { current, next: [...next.values()], last: ended[ended.length - 1] ?? null };
 }
 
 /** The lesson before `lesson` in its course ("Letzte Lektion"), or null for the first. */

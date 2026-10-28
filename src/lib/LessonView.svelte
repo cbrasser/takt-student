@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { CheckIn } from './checkin';
   import CheckInButton from './CheckInButton.svelte';
+  import ExitTicketLeaf from './ExitTicketLeaf.svelte';
+  import { exitTicketState, type ExitTicket } from './exitTicket';
   import { formatDay, formatTimes, formatWhen } from './format';
   import type { Course, Lesson } from './lessons';
   import Materials from './Materials.svelte';
@@ -10,18 +12,23 @@
     course,
     previous,
     checkIn,
+    exitTicket,
     now,
     oncheckin,
+    onhandin,
   }: {
     lesson: Lesson;
     course: Course | undefined;
     previous: Lesson | null;
     checkIn: CheckIn | undefined;
+    exitTicket: ExitTicket | undefined;
     now: Date;
     oncheckin: (c: CheckIn) => void;
+    onhandin: (t: ExitTicket) => void;
   } = $props();
 
   const siteUrl = $derived(course?.siteUrl ?? null);
+  const exit = $derived(exitTicketState(lesson, exitTicket, now));
 </script>
 
 <article class="stack">
@@ -34,6 +41,11 @@
     <h1 class="display">{lesson.topic || 'Noch kein Thema'}</h1>
     <CheckInButton {lesson} {checkIn} {now} {oncheckin} />
   </header>
+
+  <!-- While it is open the exit ticket comes first; once closed, after the lesson's content. -->
+  {#if exit.kind === 'open'}
+    <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {onhandin} />
+  {/if}
 
   {#if lesson.goals.length > 0}
     <section class="leaf">
@@ -65,6 +77,10 @@
       <h2 class="leaf-title">Material</h2>
       <Materials materials={lesson.materials} {siteUrl} />
     </section>
+  {/if}
+
+  {#if exit.kind === 'closed'}
+    <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {onhandin} />
   {/if}
 
   {#if previous}

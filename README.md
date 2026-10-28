@@ -43,21 +43,23 @@ The release build (`npm run build:release`, Vite's `release` mode) talks to the 
 ## Tests
 
 - `npm run verify` runs every check that needs no setup: the unit tests (`node:test`), the type check, the web build and `cargo check`. The pre-push hook runs it.
-- `npm run test:e2e` builds the web app against the local stack and runs the Playwright test in `e2e/`: Lea signs in and sees her current lesson without the teacher's cue, the session survives a restart and sign-out clears it, and a student without courses sees "Noch keine Lektionen". It plants its own lesson in the seeded course and removes it afterwards.
+- `npm run test:e2e` builds the web app against the local stack and runs the Playwright test in `e2e/`: Lea signs in and sees her current lesson without the teacher's cue, the session survives a restart and sign-out clears it, and a student without courses sees "Noch keine Lektionen"; Lea hands in an exit ticket, sees it again after a restart, edits it and sees it close. Each spec plants its own lesson in the seeded course and removes it afterwards.
 
 ## How it works
 
 - **Sign-in:** email and password of the student's account (the one they made on the account site for CBRATest). The session is kept in the app's own storage (the webview's local storage), not the OS keychain, so an unsigned update doesn't ask for keychain access again. Signing out clears it on this device.
-- **Home:** the lesson from 10 minutes before its start until its end opens by itself; back to back, the later one. Otherwise the overview shows the next lesson of each course and the last one. "Übersicht" switches to it at any time.
+- **Home:** the lesson from 10 minutes before its start until its end opens by itself; back to back, the later one. After its end it stays on while its exit ticket is open, and once that closes it stays on show (saying so) until the student goes to the overview or the next lesson opens. Otherwise the overview shows the next lesson of each course and the last one. "Übersicht" switches to it at any time.
 - **Lesson:** date, time and course, the course's hue as the page; the topic as the title ("Noch kein Thema" until the teacher plans it); goals, "Wo wir stehen", homework and material links; "Letzte Lektion" with the previous lesson of the course. Material paths are joined to the course's published site URL; full URLs stay as they are; anything else isn't linked.
 - **Check-in:** "Bereit" shows from 10 minutes before the start until the end, by the device's clock. The server decides (`takt_student.check_in()`): it stamps its own time and refuses a student who isn't enrolled or a time outside the window, and the app shows why. Once checked in, the button becomes "Eingecheckt 08:17 · pünktlich" or "· zu spät" (`takt_student.status()`, by the teacher's cutoff).
+- **Exit ticket:** shown in the lesson from 10 minutes before the end, or from the teacher's early open (`exit_opened_at`), until 15 minutes after the end, by the device's clock. A line on top says who sees what. The private note ("Was haben wir gemacht?"), "Was war unklar?" with an "Alles klar" choice, and a 1–4 rating per goal, each optional, go to `takt_student.submit_exit_ticket()`, which stamps its time, refuses outside the window and keeps the first submission time on edits. The student can edit until it closes; then the lesson says it has closed, with the answers handed in.
 - **Freshness:** the lessons and check-ins are read again on start, when the window gets focus, every minute while a check-in window is open and every 15 minutes otherwise. Times are always Europe/Zurich.
 
 ## Where things live
 
 - `src/lib/lessons.ts`: which lesson is current, next and last, the previous lesson, material URLs, course hues. Pure, tested in `tests/`.
 - `src/lib/checkin.ts`: what the "Bereit" button shows, refusal reasons, when to re-read. Pure, tested in `tests/`.
-- `src/lib/supabase.ts`: the connection, sign-in, the reads from `takt_student` and the check-in.
+- `src/lib/exitTicket.ts`: whether the exit ticket is open or closed, the form's draft and what it sends, refusal reasons. Pure, tested in `tests/`; the window itself is in `lessons.ts`.
+- `src/lib/supabase.ts`: the connection, sign-in, the reads from `takt_student`, the check-in and handing in.
 - `src/lib/config.ts`: which stack and which account site a build talks to, local or release.
 - `src/lib/Update.svelte`: the update prompt of the release desktop app.
 - `installieren.html`, `src/install.ts`, `src/install.css`: the install page.

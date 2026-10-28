@@ -12,6 +12,7 @@ const lesson: Lesson = {
   courseId: 'inf',
   startsAt: new Date('2026-11-02T08:15:00+01:00'),
   endsAt: new Date('2026-11-02T09:00:00+01:00'),
+  exitOpenedAt: null,
   title: 'INF',
   topic: '',
   goals: [],

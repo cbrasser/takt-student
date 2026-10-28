@@ -12,6 +12,7 @@ function lesson(courseId: string, start: string, minutes = 45, extra: Partial<Le
     courseId,
     startsAt,
     endsAt: new Date(startsAt.getTime() + minutes * MIN),
+    exitOpenedAt: null,
     title: courseId,
     topic: '',
     goals: [],
@@ -51,8 +52,16 @@ test('a lesson is current until a moment before its end', () => {
   });
 });
 
-test('at its end a lesson is the last one, and each course shows its next lesson', () => {
-  assert.deepEqual(home(all, at('2026-11-02T08:45:00+01:00')), {
+test('after its end a lesson stays current while its exit ticket is open', () => {
+  assert.deepEqual(home(all, at('2026-11-02T09:00:00+01:00', -1)), {
+    current: monday,
+    next: [tuesdayMath, nextMonday],
+    last: lastMonday,
+  });
+});
+
+test('once its exit ticket closes a lesson is the last one, and each course shows its next lesson', () => {
+  assert.deepEqual(home(all, at('2026-11-02T09:00:00+01:00')), {
     current: null,
     next: [tuesdayMath, nextMonday],
     last: monday,
@@ -71,6 +80,12 @@ test('of two open lessons back to back, the later one is current', () => {
   const first = lesson('inf', '2026-11-02T08:00:00+01:00');
   const second = lesson('mat', '2026-11-02T08:50:00+01:00');
   assert.deepEqual(home([first, second], at('2026-11-02T08:42:00+01:00')), { current: second, next: [], last: null });
+});
+
+test('the next lesson\'s window wins over the exit ticket of the one before', () => {
+  const first = lesson('inf', '2026-11-02T08:00:00+01:00');
+  const second = lesson('mat', '2026-11-02T08:50:00+01:00');
+  assert.deepEqual(home([first, second], at('2026-11-02T08:47:00+01:00')), { current: second, next: [], last: first });
 });
 
 test('without lessons there is nothing to show', () => {
@@ -117,7 +132,7 @@ test('only web addresses become links', () => {
 });
 
 test('courses take the hues in order of their name, and wrap after four', () => {
-  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, siteUrl: null });
+  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, teacherName: null, siteUrl: null });
   const hues = courseHues([course('e', '5a'), course('a', '1a'), course('c', '3a'), course('b', '2a'), course('d', '4a')]);
   assert.deepEqual(
     ['a', 'b', 'c', 'd', 'e'].map((id) => hues.get(`anna/${id}`)),

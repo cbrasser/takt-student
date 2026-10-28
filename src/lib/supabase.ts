@@ -1,13 +1,15 @@
 /**
- * The student's connection: sign-in, sign-out and reading their lessons from
- * `takt_student`. Row-level security limits every read to the courses the
- * student is enrolled in.
+ * The student's connection: sign-in, sign-out, reading their lessons from
+ * `takt_student`, checking in and handing in exit tickets. Row-level security
+ * limits every read to the courses the student is enrolled in, and to their
+ * own check-ins and tickets.
  */
 import { createClient, type Session } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { appConfig } from './config';
 import type { Course, Lesson, MaterialRef } from './lessons';
 import { checkInStatus, type CheckIn } from './checkin';
+import type { ExitTicket, Submission } from './exitTicket';
 
 export const config = appConfig(import.meta.env);
 
@@ -46,6 +48,8 @@ export interface StudentData {
   courses: Course[];
   /** The student's own; RLS hides everyone else's. */
   checkIns: CheckIn[];
+  /** The student's own, both parts. */
+  exitTickets: ExitTicket[];
 }
 
 // `status` is takt_student.status(), which PostgREST serves as a column.
@@ -74,15 +78,57 @@ export async function checkInTo(lesson: Lesson): Promise<{ checkIn: CheckIn } | 
   return { checkIn: checkInOf(data) };
 }
 
+const TICKET_COLUMNS = 'teacher_id, lesson_id, unclear, ratings, submitted_at';
+
+function ratingsOf(json: unknown): Record<string, number> {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) return {};
+  return Object.fromEntries(Object.entries(json).filter((e): e is [string, number] => typeof e[1] === 'number'));
+}
+
+/** One ticket from its two rows; a note alone (no ticket row) can't happen, both are written together. */
+function exitTicketOf(
+  t: { teacher_id: string; lesson_id: string; unclear: string | null; ratings: unknown; submitted_at: string | null },
+  note: string | undefined,
+): ExitTicket {
+  return {
+    teacherId: t.teacher_id,
+    lessonId: t.lesson_id,
+    note: note ?? '',
+    unclear: t.unclear ?? '',
+    ratings: ratingsOf(t.ratings),
+    submittedAt: t.submitted_at ? new Date(t.submitted_at) : null,
+  };
+}
+
+/**
+ * Hands in (or edits) the exit ticket at the server's time, both parts. A
+ * refusal comes back as the reason `takt_student.submit_exit_ticket()`
+ * raised (`exit_ticket_closed`, ...), or undefined when the request didn't
+ * get through.
+ */
+export async function handIn(lesson: Lesson, s: Submission): Promise<{ ticket: ExitTicket } | { refused: string | undefined }> {
+  const { data, error } = await supabase
+    .rpc('submit_exit_ticket', { teacher: lesson.teacherId, lesson: lesson.id, note: s.note, unclear: s.unclear, ratings: s.ratings })
+    .select(TICKET_COLUMNS)
+    .single();
+  if (error || !data) return { refused: error?.code === 'P0001' ? error.message : undefined };
+  return { ticket: exitTicketOf(data, s.note) };
+}
+
 export async function loadStudentData(): Promise<StudentData> {
-  const [lessons, courses, checkIns] = await Promise.all([
+  const [lessons, courses, checkIns, tickets, notes] = await Promise.all([
     supabase.from('lessons').select('*').order('starts_at'),
     supabase.from('courses').select('*'),
     supabase.from('check_ins').select(CHECK_IN_COLUMNS),
+    supabase.from('exit_tickets').select(TICKET_COLUMNS),
+    supabase.from('exit_notes').select('teacher_id, lesson_id, note'),
   ]);
   if (lessons.error) throw lessons.error;
   if (courses.error) throw courses.error;
   if (checkIns.error) throw checkIns.error;
+  if (tickets.error) throw tickets.error;
+  if (notes.error) throw notes.error;
+  const noteOf = new Map(notes.data.map((n) => [`${n.teacher_id}/${n.lesson_id}`, n.note]));
   return {
     lessons: lessons.data.map((r) => ({
       teacherId: r.teacher_id,
@@ -90,6 +136,7 @@ export async function loadStudentData(): Promise<StudentData> {
       courseId: r.course_id,
       startsAt: new Date(r.starts_at),
       endsAt: new Date(r.ends_at),
+      exitOpenedAt: r.exit_opened_at ? new Date(r.exit_opened_at) : null,
       title: r.title,
       topic: r.topic,
       goals: r.goals,
@@ -101,9 +148,11 @@ export async function loadStudentData(): Promise<StudentData> {
       teacherId: r.teacher_id,
       id: r.id,
       name: r.name,
+      teacherName: r.teacher_name,
       siteUrl: r.site_url,
     })),
     checkIns: checkIns.data.map(checkInOf),
+    exitTickets: tickets.data.map((t) => exitTicketOf(t, noteOf.get(`${t.teacher_id}/${t.lesson_id}`))),
   };
 }
 

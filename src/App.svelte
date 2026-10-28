@@ -6,6 +6,7 @@
   import { config, loadStudentData, onSession, signOut, type StudentData } from './lib/supabase';
   import { courseHues, courseKey, home, lessonKey, previousLesson, type Lesson } from './lib/lessons';
   import { refreshDue, type CheckIn } from './lib/checkin';
+  import type { ExitTicket } from './lib/exitTicket';
   import { formatTime } from './lib/format';
   import Login from './lib/Login.svelte';
   import LessonView from './lib/LessonView.svelte';
@@ -38,11 +39,20 @@
   });
   const currentKey = $derived(lessonsNow?.current ? lessonKey(lessonsNow.current) : null);
   const checkIns = $derived(new Map((data?.checkIns ?? []).map((c) => [lessonKey({ teacherId: c.teacherId, id: c.lessonId }), c])));
+  const exitTickets = $derived(
+    new Map((data?.exitTickets ?? []).map((t) => [lessonKey({ teacherId: t.teacherId, id: t.lessonId }), t])),
+  );
 
   function checkedIn(c: CheckIn) {
     if (!data) return;
     const others = data.checkIns.filter((x) => x.teacherId !== c.teacherId || x.lessonId !== c.lessonId);
     data = { ...data, checkIns: [...others, c] };
+  }
+
+  function handedIn(t: ExitTicket) {
+    if (!data) return;
+    const others = data.exitTickets.filter((x) => x.teacherId !== t.teacherId || x.lessonId !== t.lessonId);
+    data = { ...data, exitTickets: [...others, t] };
   }
 
   async function refresh() {
@@ -82,10 +92,17 @@
     });
   });
 
-  // A lesson's window opens: it opens by itself again.
+  // A lesson's window opens: it opens by itself again. When the lesson on
+  // show stops being current (its exit ticket has closed), it stays on show,
+  // so the student sees the ticket close, until they go to the overview or
+  // the next lesson opens.
+  let wasCurrent: string | null = null;
   $effect(() => {
-    void currentKey;
-    opened = null;
+    const key = currentKey;
+    untrack(() => {
+      opened = key === null && wasCurrent !== null && opened === null && data ? { kind: 'lesson', key: wasCurrent } : null;
+      wasCurrent = key;
+    });
   });
 
   // The page takes the hue of the course on show.
@@ -159,8 +176,10 @@
           course={courses.get(courseKey(shown))}
           previous={previousLesson(data.lessons, shown)}
           checkIn={checkIns.get(lessonKey(shown))}
+          exitTicket={exitTickets.get(lessonKey(shown))}
           {now}
           oncheckin={checkedIn}
+          onhandin={handedIn}
         />
       {/key}
     {:else}
