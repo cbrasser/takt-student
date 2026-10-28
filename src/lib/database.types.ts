@@ -325,6 +325,7 @@ export type Database = {
       }
       teachers: {
         Row: {
+          check_in_cutoff_minutes: number
           created_at: string
           email: string | null
           id: string
@@ -334,6 +335,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          check_in_cutoff_minutes?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -343,6 +345,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          check_in_cutoff_minutes?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -379,6 +382,47 @@ export type Database = {
   }
   takt_student: {
     Tables: {
+      check_ins: {
+        Row: {
+          checked_in_at: string | null
+          course_id: string
+          excused: boolean
+          lesson_id: string
+          present_by_hand: boolean
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          course_id: string
+          excused?: boolean
+          lesson_id: string
+          present_by_hand?: boolean
+          student_id: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          course_id?: string
+          excused?: boolean
+          lesson_id?: string
+          present_by_hand?: boolean
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_teacher_id_lesson_id_fkey"
+            columns: ["teacher_id", "lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["teacher_id", "id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           id: string
@@ -459,14 +503,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_in: {
+        Args: { lesson: string; teacher: string }
+        Returns: {
+          checked_in_at: string | null
+          course_id: string
+          excused: boolean
+          lesson_id: string
+          present_by_hand: boolean
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "check_ins"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       copy_courses: { Args: { teacher: string }; Returns: undefined }
       copy_lesson: {
         Args: { lesson: string; teacher: string }
         Returns: undefined
       }
-      is_enrolled: {
-        Args: { course: string; teacher: string }
-        Returns: boolean
+      is_enrolled:
+        | { Args: { course: string; teacher: string }; Returns: boolean }
+        | {
+            Args: { course: string; student: string; teacher: string }
+            Returns: boolean
+          }
+      status: {
+        Args: { "": Database["takt_student"]["Tables"]["check_ins"]["Row"] }
+        Returns: {
+          error: true
+        } & "the function takt_student.status with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
       }
       string: { Args: { v: Json }; Returns: string }
       strings: { Args: { v: Json }; Returns: string[] }
