@@ -8,7 +8,8 @@
  *
  * The release build (`vite build --mode release`, i.e. `npm run build:release`,
  * which the installers and the web deployment use) talks to the production
- * project and nothing else; the build environment can't redirect it.
+ * project and nothing else; the build environment can't redirect it. Only
+ * that mode does: never run `vite --mode release` as a dev server.
  */
 
 /** The local stack's address and its well-known anon key (the same on every machine). */

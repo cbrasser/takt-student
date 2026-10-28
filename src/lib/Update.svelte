@@ -12,7 +12,7 @@
   let installing = $state(false);
   let failed = $state(false);
 
-  async function look() {
+  async function checkForUpdate() {
     if (update || installing) return;
     try {
       update = await check();
@@ -42,8 +42,8 @@
   }
 
   onMount(() => {
-    void look();
-    const timer = setInterval(look, CHECK_MS);
+    void checkForUpdate();
+    const timer = setInterval(checkForUpdate, CHECK_MS);
     return () => clearInterval(timer);
   });
 </script>

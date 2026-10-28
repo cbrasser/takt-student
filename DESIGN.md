@@ -17,7 +17,6 @@ Follows the system setting. Ink and paper swap as in bestanden; the page is the 
 - **Overview:** "Übersicht" (with a lesson on) or "Gerade keine Lektion" as the title, then cards: the current lesson ("Jetzt"), the next lesson of each course and the last lesson. A card is a paper leaf with a 14px strip of its course's hue on the left, a caption with the kind and the course, the topic in Bricolage and the day and time. The current and the last lesson open on click; a next lesson's card doesn't open, so of its content only the topic shows.
 - **Empty:** "Noch keine Lektionen" as the title and a lede saying lessons appear once the teacher plans them.
 - **Offline:** a note above the content, "Keine Verbindung. Stand 08:15.", while the last lessons read stay on screen.
-
 - **Update:** in the release desktop app only, a leaf fixed to the bottom right (460px at most): "Neue Version von Takt", the version and that Takt restarts, then a quiet "Später" and the primary "Aktualisieren" ("Wird installiert …" while it runs). A failure is an error box inside the leaf.
 
 ## Install page

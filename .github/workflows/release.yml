@@ -6,8 +6,8 @@
 # Every asset has the same name in every release, so the install page links to
 # releases/latest/download/<name>, and the installed apps read latest.json
 # from there. The release stays a draft until both platforms and the manifest
-# are up; a failed run leaves only a draft behind (delete it and the tag, then
-# tag again).
+# are up; a failed run leaves only a draft behind, and re-running the workflow
+# reuses it.
 #
 # Secrets: TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD,
 # the updater key (scripts/updater-key.sh). Its public half is in
@@ -36,10 +36,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Draft the release
         run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 && exit 0
           gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
             --title "Takt Student ${GITHUB_REF_NAME#v}" \
             --generate-notes \
-            --notes "**Installieren:** $INSTALL_PAGE – mit der Anleitung für die einmalige Freigabe auf macOS und Windows. Wer Takt schon hat, bekommt das Update in der App."
+            --notes "**Installieren:** $INSTALL_PAGE – mit der Anleitung für die einmalige Freigabe auf macOS und Windows. Hast du Takt schon, bekommst du das Update in der App."
 
   build:
     needs: draft

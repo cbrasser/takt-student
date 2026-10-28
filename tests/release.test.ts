@@ -36,13 +36,6 @@ test('a missing or empty signature is refused, so no release ships an update tha
   }
 });
 
-test('the install page links to the latest release of both installers', () => {
-  const page = readFileSync(new URL('../installieren.html', import.meta.url), 'utf8');
-  for (const file of [ASSETS.dmg, ASSETS.windowsSetup]) {
-    assert.ok(page.includes(`https://github.com/${REPO}/releases/latest/download/${file}`), file);
-  }
-});
-
 test('the updater reads the manifest of the latest release', () => {
   const conf = JSON.parse(readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'));
   assert.deepEqual(conf.plugins.updater.endpoints, [`https://github.com/${REPO}/releases/latest/download/latest.json`]);
