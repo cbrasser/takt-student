@@ -1,9 +1,25 @@
 <script lang="ts">
+  import type { CheckIn } from './checkin';
+  import CheckInButton from './CheckInButton.svelte';
   import { formatDay, formatTimes, formatWhen } from './format';
   import type { Course, Lesson } from './lessons';
   import Materials from './Materials.svelte';
 
-  let { lesson, course, previous }: { lesson: Lesson; course: Course | undefined; previous: Lesson | null } = $props();
+  let {
+    lesson,
+    course,
+    previous,
+    checkIn,
+    now,
+    oncheckin,
+  }: {
+    lesson: Lesson;
+    course: Course | undefined;
+    previous: Lesson | null;
+    checkIn: CheckIn | undefined;
+    now: Date;
+    oncheckin: (c: CheckIn) => void;
+  } = $props();
 
   const siteUrl = $derived(course?.siteUrl ?? null);
 </script>
@@ -16,6 +32,7 @@
       <span>{formatTimes(lesson.startsAt, lesson.endsAt)}</span>
     </p>
     <h1 class="display">{lesson.topic || 'Noch kein Thema'}</h1>
+    <CheckInButton {lesson} {checkIn} {now} {oncheckin} />
   </header>
 
   {#if lesson.goals.length > 0}

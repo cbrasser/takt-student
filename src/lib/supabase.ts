@@ -7,13 +7,18 @@ import { createClient, type Session } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { appConfig } from './config';
 import type { Course, Lesson, MaterialRef } from './lessons';
+import type { CheckIn, CheckInStatus } from './checkin';
 
 export const config = appConfig(import.meta.env);
 
 // The session lives in the app's own storage (the webview's local storage),
 // not the OS keychain: unsigned builds would ask for keychain access again
 // after every update.
-export const supabase = createClient<Database, 'takt_student'>(config.supabaseUrl, config.anonKey, {
+// takt_student.status() is a computed column (PostgREST serves a function of
+// the row as one), which the generated types don't list on check_ins.
+type Schema = Database & { takt_student: { Tables: { check_ins: { Row: { status: string | null } } } } };
+
+export const supabase = createClient<Schema, 'takt_student'>(config.supabaseUrl, config.anonKey, {
   db: { schema: 'takt_student' },
   auth: { storageKey: config.sessionKey, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
@@ -39,15 +44,45 @@ export function onSession(fn: (session: Session | null) => void): () => void {
 export interface StudentData {
   lessons: Lesson[];
   courses: Course[];
+  /** The student's own; RLS hides everyone else's. */
+  checkIns: CheckIn[];
+}
+
+// `status` is takt_student.status(), which PostgREST serves as a column.
+const CHECK_IN_COLUMNS = 'teacher_id, lesson_id, checked_in_at, status';
+
+function checkInOf(r: { teacher_id: string; lesson_id: string; checked_in_at: string | null; status: string | null }): CheckIn {
+  return {
+    teacherId: r.teacher_id,
+    lessonId: r.lesson_id,
+    checkedInAt: r.checked_in_at ? new Date(r.checked_in_at) : null,
+    status: (r.status ?? 'missing') as CheckInStatus,
+  };
+}
+
+/**
+ * Checks the student in at the server's time. A refusal comes back as the
+ * reason `takt_student.check_in()` raised (`check_in_not_open`, ...), or
+ * undefined when the request didn't get through.
+ */
+export async function checkIn(lesson: Lesson): Promise<{ checkIn: CheckIn } | { refused: string | undefined }> {
+  const { data, error } = await supabase
+    .rpc('check_in', { teacher: lesson.teacherId, lesson: lesson.id })
+    .select(CHECK_IN_COLUMNS)
+    .single();
+  if (error || !data) return { refused: error?.code === 'P0001' ? error.message : undefined };
+  return { checkIn: checkInOf(data) };
 }
 
 export async function loadStudentData(): Promise<StudentData> {
-  const [lessons, courses] = await Promise.all([
+  const [lessons, courses, checkIns] = await Promise.all([
     supabase.from('lessons').select('*').order('starts_at'),
     supabase.from('courses').select('*'),
+    supabase.from('check_ins').select(CHECK_IN_COLUMNS),
   ]);
   if (lessons.error) throw lessons.error;
   if (courses.error) throw courses.error;
+  if (checkIns.error) throw checkIns.error;
   return {
     lessons: lessons.data.map((r) => ({
       teacherId: r.teacher_id,
@@ -68,6 +103,7 @@ export async function loadStudentData(): Promise<StudentData> {
       name: r.name,
       siteUrl: r.site_url,
     })),
+    checkIns: checkIns.data.map(checkInOf),
   };
 }
 
