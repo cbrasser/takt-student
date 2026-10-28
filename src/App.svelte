@@ -1,0 +1,157 @@
+<script lang="ts">
+  import { onMount, untrack } from 'svelte';
+  import type { Session } from '@supabase/supabase-js';
+  import { isTauri } from '@tauri-apps/api/core';
+  import { openUrl } from '@tauri-apps/plugin-opener';
+  import { config, loadStudentData, onSession, signOut, type StudentData } from './lib/supabase';
+  import { courseHues, courseKey, home, previousLesson, type Lesson } from './lib/lessons';
+  import { formatTime } from './lib/format';
+  import Login from './lib/Login.svelte';
+  import LessonView from './lib/LessonView.svelte';
+  import Overview from './lib/Overview.svelte';
+
+  const REFRESH_MS = 15 * 60_000;
+  const CLOCK_MS = 30_000;
+
+  /** Undefined until the stored session has been read. */
+  let session = $state<Session | null | undefined>(undefined);
+  let data = $state.raw<StudentData | null>(null);
+  let loadedAt = $state<Date | null>(null);
+  let offline = $state(false);
+  let now = $state(new Date());
+  /** What the student opened by hand; null follows home (the current lesson, else the overview). */
+  let opened = $state<{ kind: 'overview' } | { kind: 'lesson'; key: string } | null>(null);
+
+  const userId = $derived(session?.user.id ?? null);
+  const lessonKey = (l: Lesson) => `${l.teacherId}/${l.id}`;
+
+  const today = $derived(data ? home(data.lessons, now) : null);
+  const courses = $derived(new Map((data?.courses ?? []).map((c) => [courseKey(c), c])));
+  const hues = $derived(courseHues(data?.courses ?? []));
+  const shown = $derived.by((): Lesson | null => {
+    if (!data || opened?.kind === 'overview') return null;
+    if (opened?.kind === 'lesson') {
+      const key = opened.key;
+      return data.lessons.find((l) => lessonKey(l) === key) ?? null;
+    }
+    return today?.current ?? null;
+  });
+  const currentKey = $derived(today?.current ? lessonKey(today.current) : null);
+
+  async function refresh() {
+    now = new Date();
+    const user = userId;
+    if (!user) return;
+    try {
+      const fresh = await loadStudentData();
+      // Signed out or switched while the request ran: drop it.
+      if (user !== userId) return;
+      data = fresh;
+      loadedAt = new Date();
+      offline = false;
+    } catch {
+      if (user === userId) offline = true;
+    }
+  }
+
+  async function leave() {
+    await signOut();
+  }
+
+  // A different student (or none): start over, then load.
+  $effect(() => {
+    void userId;
+    untrack(() => {
+      data = null;
+      loadedAt = null;
+      offline = false;
+      opened = null;
+      void refresh();
+    });
+  });
+
+  // A lesson's window opens: it opens by itself again.
+  $effect(() => {
+    void currentKey;
+    opened = null;
+  });
+
+  // The page takes the hue of the course on show.
+  $effect(() => {
+    const hue = shown ? hues.get(courseKey(shown)) : undefined;
+    if (hue === undefined) delete document.documentElement.dataset.hue;
+    else document.documentElement.dataset.hue = String(hue);
+  });
+
+  /** In the desktop app a link opens in the browser, not in the app's window. */
+  function openExternally(e: MouseEvent) {
+    const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+    if (!a || !isTauri() || a.origin === location.origin || !/^https?:$/.test(a.protocol)) return;
+    e.preventDefault();
+    void openUrl(a.href);
+  }
+
+  onMount(() => {
+    const stop = onSession((s) => {
+      // Token refreshes hand over a new object for the same student.
+      if (s?.user.id !== session?.user.id || session === undefined) session = s;
+    });
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    const refreshTimer = setInterval(refresh, REFRESH_MS);
+    const clock = setInterval(() => (now = new Date()), CLOCK_MS);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    document.addEventListener('click', openExternally);
+    return () => {
+      stop();
+      clearInterval(refreshTimer);
+      clearInterval(clock);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('click', openExternally);
+    };
+  });
+</script>
+
+{#if session === null}
+  <Login accountUrl={config.accountUrl} />
+{:else if session}
+  <div class="page">
+    <header class="app-bar">
+      <span class="wordmark">Takt</span>
+      <div class="app-bar-actions">
+        {#if shown}
+          <button class="btn" onclick={() => (opened = { kind: 'overview' })}>Übersicht</button>
+        {/if}
+        <button class="btn btn-quiet" onclick={leave}>Abmelden</button>
+      </div>
+    </header>
+
+    {#if offline}
+      <p class="note offline" role="status">
+        Keine Verbindung.{#if loadedAt} Stand {formatTime(loadedAt)}.{/if}
+      </p>
+    {/if}
+
+    {#if !data || !today}
+      {#if !offline}<p class="muted">Lädt …</p>{/if}
+    {:else if data.lessons.length === 0}
+      <section class="stack">
+        <h1 class="display">Noch keine Lektionen</h1>
+        <p class="lede">Sobald deine Lehrperson Lektionen für deine Kurse plant, erscheinen sie hier.</p>
+      </section>
+    {:else if shown}
+      <LessonView lesson={shown} course={courses.get(courseKey(shown))} previous={previousLesson(data.lessons, shown)} />
+    {:else}
+      <Overview home={today} {courses} {hues} onopen={(l) => (opened = { kind: 'lesson', key: lessonKey(l) })} />
+    {/if}
+  </div>
+{/if}
+
+<style>
+  .offline {
+    margin-bottom: var(--s-5);
+  }
+</style>
