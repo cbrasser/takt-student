@@ -117,7 +117,7 @@ test('only web addresses become links', () => {
 });
 
 test('courses take the hues in order of their name, and wrap after four', () => {
-  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, teacherName: null, siteUrl: null });
+  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, siteUrl: null });
   const hues = courseHues([course('e', '5a'), course('a', '1a'), course('c', '3a'), course('b', '2a'), course('d', '4a')]);
   assert.deepEqual(
     ['a', 'b', 'c', 'd', 'e'].map((id) => hues.get(`anna/${id}`)),

@@ -93,8 +93,14 @@ input {
   --dur-fast: 120ms;
   --dur-slow: 320ms;
 
+  --focus: 3px solid var(--ink);
+  --r-focus: 6px;
+  /* The course hue on the edge of an overview card */
+  --strip: 14px;
+
   --tap: 44px;
   --page-max: 760px;
+  --narrow-max: 460px;
   --gutter: clamp(16px, 3vw, 40px);
 }
 
@@ -150,9 +156,9 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: var(--focus);
+  outline-offset: var(--line-w);
+  border-radius: var(--r-focus);
 }
 
 h1,
@@ -172,7 +178,7 @@ p {
 a {
   color: inherit;
   text-underline-offset: 0.2em;
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: var(--line-w);
 }
 
 /* ---------------------------------------------------------------- leaves */
@@ -243,7 +249,7 @@ a {
 }
 
 .btn:active {
-  transform: translate(2px, 2px);
+  transform: translate(var(--line-w), var(--line-w));
   box-shadow: 0 0 0 var(--ink);
 }
 
@@ -302,7 +308,7 @@ a {
 
 .input[aria-invalid="true"] {
   border-color: var(--danger);
-  box-shadow: 2px 2px 0 var(--danger);
+  box-shadow: var(--line-w) var(--line-w) 0 var(--danger);
 }
 
 .note {
@@ -316,7 +322,7 @@ a {
 
 .form-error {
   background: var(--danger-tint);
-  border: 2px solid var(--danger);
+  border: var(--line-w) solid var(--danger);
   border-radius: var(--r-control);
   color: var(--danger);
   padding: var(--s-3) var(--s-4);
@@ -357,7 +363,7 @@ a {
   border: var(--line);
   border-radius: var(--r-control);
   box-shadow: var(--shadow-sm);
-  padding: 6px 12px 8px;
+  padding: var(--s-1) var(--s-3) var(--s-2);
 }
 
 .display {

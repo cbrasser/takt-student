@@ -21,7 +21,8 @@ export const supabase = createClient<Database, 'takt_student'>(config.supabaseUr
 export async function signIn(email: string, password: string): Promise<string | null> {
   const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   if (!error) return null;
-  if (error.status === 400) return 'E-Mail oder Passwort stimmt nicht.';
+  if (error.code === 'invalid_credentials') return 'E-Mail oder Passwort stimmt nicht.';
+  if (error.code === 'email_not_confirmed') return 'Bestätige zuerst deine E-Mail-Adresse mit dem Link, den wir dir geschickt haben.';
   return 'Anmelden hat nicht geklappt. Bist du online?';
 }
 
@@ -65,7 +66,6 @@ export async function loadStudentData(): Promise<StudentData> {
       teacherId: r.teacher_id,
       id: r.id,
       name: r.name,
-      teacherName: r.teacher_name,
       siteUrl: r.site_url,
     })),
   };

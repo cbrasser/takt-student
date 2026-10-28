@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatDay, formatTimes } from './format';
+  import { formatDay, formatTimes, formatWhen } from './format';
   import type { Course, Lesson } from './lessons';
   import Materials from './Materials.svelte';
 
@@ -53,7 +53,7 @@
   {#if previous}
     <section class="leaf previous" aria-labelledby="previous-title">
       <h2 class="leaf-title" id="previous-title">Letzte Lektion</h2>
-      <p class="caption muted">{formatDay(previous.startsAt)} · {formatTimes(previous.startsAt, previous.endsAt)}</p>
+      <p class="caption muted">{formatWhen(previous.startsAt, previous.endsAt)}</p>
       <p class="previous-topic">{previous.topic || 'Noch kein Thema'}</p>
       {#if previous.homework}
         <h3 class="group">Hausaufgaben</h3>

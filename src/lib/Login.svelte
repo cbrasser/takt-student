@@ -42,7 +42,7 @@
 
 <style>
   .login {
-    max-width: 460px;
+    max-width: var(--narrow-max);
   }
 
   .lede {

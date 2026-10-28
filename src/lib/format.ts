@@ -15,6 +15,11 @@ export function formatTimes(start: Date, end: Date): string {
   return `${time.format(start)}–${time.format(end)}`;
 }
 
+/** "Montag, 2. November · 08:15–09:00" */
+export function formatWhen(start: Date, end: Date): string {
+  return `${formatDay(start)} · ${formatTimes(start, end)}`;
+}
+
 /** "Montag, 2. November" */
 export function formatDay(d: Date): string {
   return day.format(d);

@@ -29,7 +29,6 @@ export interface Course {
   id: string;
   /** As Takt names it: "3a · Informatik". */
   name: string;
-  teacherName: string | null;
   /** The teacher's published site, the base of material paths. */
   siteUrl: string | null;
 }
@@ -49,6 +48,11 @@ export const OPENS_BEFORE_MS = 10 * 60_000;
 /** Course ids are the teacher's own, so a course is named by both. */
 export function courseKey(x: { teacherId: string; courseId?: string; id: string }): string {
   return `${x.teacherId}/${x.courseId ?? x.id}`;
+}
+
+/** A lesson is named by its teacher and its id. */
+export function lessonKey(l: Lesson): string {
+  return `${l.teacherId}/${l.id}`;
 }
 
 const opensAt = (l: Lesson) => l.startsAt.getTime() - OPENS_BEFORE_MS;

@@ -4,7 +4,7 @@
   import { isTauri } from '@tauri-apps/api/core';
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { config, loadStudentData, onSession, signOut, type StudentData } from './lib/supabase';
-  import { courseHues, courseKey, home, previousLesson, type Lesson } from './lib/lessons';
+  import { courseHues, courseKey, home, lessonKey, previousLesson, type Lesson } from './lib/lessons';
   import { formatTime } from './lib/format';
   import Login from './lib/Login.svelte';
   import LessonView from './lib/LessonView.svelte';
@@ -23,9 +23,8 @@
   let opened = $state<{ kind: 'overview' } | { kind: 'lesson'; key: string } | null>(null);
 
   const userId = $derived(session?.user.id ?? null);
-  const lessonKey = (l: Lesson) => `${l.teacherId}/${l.id}`;
 
-  const today = $derived(data ? home(data.lessons, now) : null);
+  const lessonsNow = $derived(data ? home(data.lessons, now) : null);
   const courses = $derived(new Map((data?.courses ?? []).map((c) => [courseKey(c), c])));
   const hues = $derived(courseHues(data?.courses ?? []));
   const shown = $derived.by((): Lesson | null => {
@@ -34,9 +33,9 @@
       const key = opened.key;
       return data.lessons.find((l) => lessonKey(l) === key) ?? null;
     }
-    return today?.current ?? null;
+    return lessonsNow?.current ?? null;
   });
-  const currentKey = $derived(today?.current ? lessonKey(today.current) : null);
+  const currentKey = $derived(lessonsNow?.current ? lessonKey(lessonsNow.current) : null);
 
   async function refresh() {
     now = new Date();
@@ -52,10 +51,6 @@
     } catch {
       if (user === userId) offline = true;
     }
-  }
-
-  async function leave() {
-    await signOut();
   }
 
   // A different student (or none): start over, then load.
@@ -125,7 +120,7 @@
         {#if shown}
           <button class="btn" onclick={() => (opened = { kind: 'overview' })}>Übersicht</button>
         {/if}
-        <button class="btn btn-quiet" onclick={leave}>Abmelden</button>
+        <button class="btn btn-quiet" onclick={signOut}>Abmelden</button>
       </div>
     </header>
 
@@ -135,7 +130,7 @@
       </p>
     {/if}
 
-    {#if !data || !today}
+    {#if !data || !lessonsNow}
       {#if !offline}<p class="muted">Lädt …</p>{/if}
     {:else if data.lessons.length === 0}
       <section class="stack">
@@ -145,7 +140,7 @@
     {:else if shown}
       <LessonView lesson={shown} course={courses.get(courseKey(shown))} previous={previousLesson(data.lessons, shown)} />
     {:else}
-      <Overview home={today} {courses} {hues} onopen={(l) => (opened = { kind: 'lesson', key: lessonKey(l) })} />
+      <Overview home={lessonsNow} {courses} {hues} onopen={(l) => (opened = { kind: 'lesson', key: lessonKey(l) })} />
     {/if}
   </div>
 {/if}

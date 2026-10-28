@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { formatDay, formatTimes } from './format';
-  import { courseKey, type Course, type Home, type Lesson } from './lessons';
+  import { formatWhen } from './format';
+  import { courseKey, lessonKey, type Course, type Home, type Lesson } from './lessons';
 
   let {
     home,
@@ -15,22 +15,19 @@
   } = $props();
 </script>
 
-{#snippet card(lesson: Lesson, label: string, open: boolean)}
-  {@const key = courseKey(lesson)}
-  {@const body = `${formatDay(lesson.startsAt)} · ${formatTimes(lesson.startsAt, lesson.endsAt)}`}
-  <li class="card" data-hue={hues.get(key)}>
-    {#if open}
-      <button class="card-body" onclick={() => onopen(lesson)}>
-        <span class="caption">{label} · {courses.get(key)?.name ?? lesson.title}</span>
-        <span class="topic">{lesson.topic || 'Noch kein Thema'}</span>
-        <span class="when">{body}</span>
-      </button>
+{#snippet content(lesson: Lesson, label: string)}
+  <span class="caption">{label} · {courses.get(courseKey(lesson))?.name ?? lesson.title}</span>
+  <span class="topic">{lesson.topic || 'Noch kein Thema'}</span>
+  <span class="when">{formatWhen(lesson.startsAt, lesson.endsAt)}</span>
+{/snippet}
+
+<!-- The current and the last lesson open; a next lesson shows only its topic. -->
+{#snippet card(lesson: Lesson, label: string, opens: boolean)}
+  <li data-hue={hues.get(courseKey(lesson))}>
+    {#if opens}
+      <button class="card-body" onclick={() => onopen(lesson)}>{@render content(lesson, label)}</button>
     {:else}
-      <div class="card-body">
-        <span class="caption">{label} · {courses.get(key)?.name ?? lesson.title}</span>
-        <span class="topic">{lesson.topic || 'Noch kein Thema'}</span>
-        <span class="when">{body}</span>
-      </div>
+      <div class="card-body">{@render content(lesson, label)}</div>
     {/if}
   </li>
 {/snippet}
@@ -39,7 +36,7 @@
   <h1 class="display">{home.current ? 'Übersicht' : 'Gerade keine Lektion'}</h1>
   <ul class="cards">
     {#if home.current}{@render card(home.current, 'Jetzt', true)}{/if}
-    {#each home.next as lesson (lesson.teacherId + lesson.id)}{@render card(lesson, 'Nächste Lektion', false)}{/each}
+    {#each home.next as lesson (lessonKey(lesson))}{@render card(lesson, 'Nächste Lektion', false)}{/each}
     {#if home.last}{@render card(home.last, 'Letzte Lektion', true)}{/if}
   </ul>
 </section>
@@ -60,7 +57,7 @@
     background: var(--paper);
     color: var(--ink);
     border: var(--line);
-    border-left: 14px solid var(--hue);
+    border-left: var(--strip) solid var(--hue);
     border-radius: var(--r-leaf);
     box-shadow: var(--shadow-sm);
     padding: var(--s-4) var(--s-5);
