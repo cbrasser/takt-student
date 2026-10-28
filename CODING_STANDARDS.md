@@ -18,9 +18,9 @@ Which lesson is current, next or last, and what a material path links to, are de
 
 Views get plain `Lesson` and `Course` values; only `src/lib/supabase.ts` talks to Supabase. The app reads `takt_student` only, never `takt`, and writes only through `takt_student.check_in()`, which stamps the server's time: row-level security is the guard, and the app never relies on its own filtering to hide another class.
 
-## Builds talk to a local Supabase
+## Only the release build talks to production
 
-Every build reaches only a local stack (`http://127.0.0.1:54321` by default, `src/lib/config.ts`); anything else is refused. The release build that talks to production comes with distribution (#31), and nothing else may give a build a way there.
+A local build reaches only a local stack (`http://127.0.0.1:54321` by default, `src/lib/config.ts`); anything else is refused. The release build (Vite's `release` mode) reaches the production project and nothing else, whatever the environment says. Nothing else may give a build a way there, and each CSP (`src-tauri/tauri.conf.json` for local, `src-tauri/tauri.release.conf.json` and `vercel.json` for release) allows only its build's project.
 
 ## The session stays in the app's own storage
 

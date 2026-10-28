@@ -1,0 +1,59 @@
+/* The install page (installieren.html). Tokens only, from app.css. */
+
+.install {
+  display: grid;
+  gap: var(--s-5);
+}
+
+.install .app-bar {
+  margin-bottom: 0;
+}
+
+.downloads {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s-5);
+}
+
+.download {
+  display: grid;
+  gap: var(--s-2);
+  justify-items: start;
+  text-decoration: none;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+.download:hover .btn {
+  background: var(--ink-hover);
+}
+
+.download:active {
+  transform: translate(var(--line-w), var(--line-w));
+  box-shadow: var(--shadow-sm);
+}
+
+.download .caption {
+  color: var(--ink-2);
+}
+
+.download-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--t-xl);
+  line-height: 1.1;
+  margin-bottom: var(--s-2);
+}
+
+.steps {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding-left: var(--s-5);
+}
+
+.steps li::marker {
+  font-family: var(--font-display);
+  font-weight: 800;
+}

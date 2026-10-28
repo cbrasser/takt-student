@@ -7,7 +7,7 @@ Takt for students: a small desktop app (Tauri, Windows and macOS) with a web fal
 - **The data comes from `cbra-platform`'s `takt_student` schema**, built there from Takt's lessons and plans. Schema changes happen there; run `npm run db:types` here afterwards.
 - **One local Supabase stack at a time**: `cbra-platform`'s, from `$CBRA_PLATFORM_DIR` or a sibling `../cbra-platform` (`pnpm db:start` there).
 - **`npm run verify`** is the check the pre-push hook runs; **`npm run test:e2e`** runs the Playwright test against the local stack.
-- **Nothing here reaches production** until distribution (#31) adds the release build.
+- **Only the release build reaches production**: `npm run build:release` (Vite's `release` mode, `src/lib/config.ts`), which the installers and the Vercel deployment use. A `v*` tag publishes the installers (`.github/workflows/release.yml`); ask before pushing one.
 
 ## Agent skills
 
