@@ -311,6 +311,22 @@ a {
   box-shadow: var(--line-w) var(--line-w) 0 var(--danger);
 }
 
+/* A checkbox with its label: "Alles klar", the settings' switch. */
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--tap);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.choice input {
+  width: var(--s-5);
+  height: var(--s-5);
+  accent-color: var(--ink);
+}
+
 .note {
   background: var(--hue-wash);
   border: var(--line);

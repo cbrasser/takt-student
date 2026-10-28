@@ -7,12 +7,17 @@
   import { courseHues, courseKey, home, keptOnShow, lessonKey, previousLesson, type Lesson } from './lib/lessons';
   import { refreshDue, type CheckIn } from './lib/checkin';
   import type { ExitTicket } from './lib/exitTicket';
+  import { exitNotice, exitNotices } from './lib/exitNotice';
+  import { exitNoticeOn, keepSeenOpen, notify, seenOpen, setExitNoticeOn } from './lib/notifications';
   import { formatTime } from './lib/format';
   import Login from './lib/Login.svelte';
   import LessonView from './lib/LessonView.svelte';
   import Overview from './lib/Overview.svelte';
+  import Settings from './lib/Settings.svelte';
 
   const CLOCK_MS = 30_000;
+  /** Notifications and their settings are the desktop app's; the web app has neither. */
+  const desktop = isTauri();
 
   /** Undefined until the stored session has been read. */
   let session = $state<Session | null | undefined>(undefined);
@@ -22,7 +27,8 @@
   let now = $state(new Date());
   let loading = false;
   /** What the student opened by hand; null follows home (the current lesson, else the overview). */
-  let opened = $state<{ kind: 'overview' } | { kind: 'lesson'; key: string } | null>(null);
+  let opened = $state<{ kind: 'overview' } | { kind: 'settings' } | { kind: 'lesson'; key: string } | null>(null);
+  let noticeOn = $state(exitNoticeOn());
 
   const userId = $derived(session?.user.id ?? null);
 
@@ -30,7 +36,7 @@
   const courses = $derived(new Map((data?.courses ?? []).map((c) => [courseKey(c), c])));
   const hues = $derived(courseHues(data?.courses ?? []));
   const shown = $derived.by((): Lesson | null => {
-    if (!data || opened?.kind === 'overview') return null;
+    if (!data || opened?.kind === 'overview' || opened?.kind === 'settings') return null;
     if (opened?.kind === 'lesson') {
       const key = opened.key;
       return data.lessons.find((l) => lessonKey(l) === key) ?? null;
@@ -106,6 +112,25 @@
     });
   });
 
+  // What the polling read: "Exit-Ticket ist offen" once per lesson, in the desktop app.
+  $effect(() => {
+    const d = data;
+    const user = userId;
+    const t = now;
+    const on = noticeOn;
+    if (!desktop || !d || !user) return;
+    untrack(() => {
+      const { due, seen } = exitNotices(d.lessons, d.exitTickets, seenOpen(user), on, t);
+      keepSeenOpen(user, seen);
+      for (const l of due) void notify(exitNotice(l, courses.get(courseKey(l))));
+    });
+  });
+
+  function switchExitNotice(on: boolean) {
+    setExitNoticeOn(on);
+    noticeOn = on;
+  }
+
   // The page takes the hue of the course on show.
   $effect(() => {
     const hue = shown ? hues.get(courseKey(shown)) : undefined;
@@ -116,7 +141,7 @@
   /** In the desktop app a link opens in the browser, not in the app's window. */
   function openExternally(e: MouseEvent) {
     const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
-    if (!a || !isTauri() || a.origin === location.origin || !/^https?:$/.test(a.protocol)) return;
+    if (!a || !desktop || a.origin === location.origin || !/^https?:$/.test(a.protocol)) return;
     e.preventDefault();
     void openUrl(a.href);
   }
@@ -150,8 +175,15 @@
     <header class="app-bar">
       <span class="wordmark">Takt</span>
       <div class="app-bar-actions">
-        {#if shown}
-          <button class="btn" onclick={() => (opened = { kind: 'overview' })}>Übersicht</button>
+        {#if opened?.kind === 'settings'}
+          <button class="btn" onclick={() => (opened = null)}>Zurück</button>
+        {:else}
+          {#if shown}
+            <button class="btn" onclick={() => (opened = { kind: 'overview' })}>Übersicht</button>
+          {/if}
+          {#if desktop}
+            <button class="btn btn-quiet" onclick={() => (opened = { kind: 'settings' })}>Einstellungen</button>
+          {/if}
         {/if}
         <button class="btn btn-quiet" onclick={signOut}>Abmelden</button>
       </div>
@@ -163,7 +195,9 @@
       </p>
     {/if}
 
-    {#if !data || !lessonsNow}
+    {#if opened?.kind === 'settings'}
+      <Settings on={noticeOn} onchange={switchExitNotice} />
+    {:else if !data || !lessonsNow}
       {#if !offline}<p class="muted">Lädt …</p>{/if}
     {:else if data.lessons.length === 0}
       <section class="stack">
