@@ -52,6 +52,7 @@ The release build (`npm run build:release`, Vite's `release` mode) talks to the 
 - **Lesson:** date, time and course, the course's hue as the page; the topic as the title ("Noch kein Thema" until the teacher plans it); goals, "Wo wir stehen", homework and material links; "Letzte Lektion" with the previous lesson of the course. Material paths are joined to the course's published site URL; full URLs stay as they are; anything else isn't linked.
 - **Check-in:** "Bereit" shows from 10 minutes before the start until the end, by the device's clock. The server decides (`takt_student.check_in()`): it stamps its own time and refuses a student who isn't enrolled or a time outside the window, and the app shows why. Once checked in, the button becomes "Eingecheckt 08:17 · pünktlich" or "· zu spät" (`takt_student.status()`, by the teacher's cutoff).
 - **Exit ticket:** shown in the lesson from 10 minutes before the end, or from the teacher's early open (`exit_opened_at`), until 15 minutes after the end, by the device's clock. A line on top says who sees what. The private note ("Was haben wir gemacht?"), "Was war unklar?" with an "Alles klar" choice, and a 1–4 rating per goal, each optional, go to `takt_student.submit_exit_ticket()`, which stamps its time, refuses outside the window and keeps the first submission time on edits. The student can edit until it closes; then the lesson says it has closed, with the answers handed in.
+- **Notification:** the desktop app sends "Exit-Ticket ist offen" (`tauri-plugin-notification`) when its reading sees a lesson's exit ticket open, by itself or opened early by the teacher: once per lesson, also across restarts, never once handed in, and never while switched off under "Einstellungen". The switch and the lessons already seen open live in the app's own storage. The OS asks for permission the first time. The web app has neither the notification nor the settings.
 - **Freshness:** the lessons and check-ins are read again on start, when the window gets focus, every minute while a check-in window is open and every 15 minutes otherwise. Times are always Europe/Zurich.
 
 ## Where things live
@@ -59,6 +60,7 @@ The release build (`npm run build:release`, Vite's `release` mode) talks to the 
 - `src/lib/lessons.ts`: which lesson is current, next and last, the previous lesson, material URLs, course hues. Pure, tested in `tests/`.
 - `src/lib/checkin.ts`: what the "Bereit" button shows, refusal reasons, when to re-read. Pure, tested in `tests/`.
 - `src/lib/exitTicket.ts`: whether the exit ticket is open or closed, the form's draft and what it sends, refusal reasons. Pure, tested in `tests/`; the window itself is in `lessons.ts`.
+- `src/lib/exitNotice.ts`: for which lessons "Exit-Ticket ist offen" fires, and its text. Pure, tested in `tests/`; `src/lib/notifications.ts` keeps its switch and sends it.
 - `src/lib/supabase.ts`: the connection, sign-in, the reads from `takt_student`, the check-in and handing in.
 - `src/lib/config.ts`: which stack and which account site a build talks to, local or release.
 - `src/lib/Update.svelte`: the update prompt of the release desktop app.
@@ -67,4 +69,4 @@ The release build (`npm run build:release`, Vite's `release` mode) talks to the 
 - `.github/workflows/`: `ci.yml` runs `npm run verify`; `release.yml` publishes a tag.
 - `src/lib/database.types.ts`: generated from the local stack with `npm run db:types`; don't edit.
 - `src/app.css`: the design tokens, light and dark ([DESIGN.md](DESIGN.md)).
-- `src-tauri/`: the desktop shell, one window; links open in the browser. `tauri.release.conf.json` is what the release build adds: the production CSP, the release frontend and the updater files.
+- `src-tauri/`: the desktop shell, one window; links open in the browser, and it sends OS notifications. `tauri.release.conf.json` is what the release build adds: the production CSP, the release frontend and the updater files.
