@@ -1,0 +1,35 @@
+{
+  "name": "takt-student",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "tauri": "tauri",
+    "test": "node --test tests/*.test.ts",
+    "test:e2e": "sh scripts/local.sh playwright test",
+    "verify": "sh scripts/verify.sh",
+    "db:types": "sh scripts/db-types.sh",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/plugin-opener": "^2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@sveltejs/vite-plugin-svelte": "^6",
+    "@tauri-apps/cli": "^2.12.1",
+    "@tsconfig/svelte": "^5",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4",
+    "typescript": "^5.9",
+    "vite": "^7"
+  }
+}

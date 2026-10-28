@@ -1,0 +1,4 @@
+#!/bin/sh
+# Versioned pre-push hook, installed by `npm install` (the `prepare` script
+# points core.hooksPath here). Skip it in an emergency: git push --no-verify
+exec npm run verify

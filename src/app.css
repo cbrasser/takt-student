@@ -1,0 +1,402 @@
+/* The student app's styles: bestanden's design language
+   (~/code/bestandenfmsneufeld, DESIGN.md and src/index.css), itself yaft's,
+   as cbra-platform's account site ports it. bestanden's year hues become one
+   hue per course: `--hue` is set where a course is shown. Dark mode follows
+   the system setting. DESIGN.md here records what this app adds. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+ul {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+:root {
+  color-scheme: light;
+
+  /* Ink and paper */
+  --ink: #15161a;
+  --ink-2: #3a3d46;
+  --ink-3: #5c606b;
+  --paper: #ffffff;
+  --ground: #e6eaef;
+  --ground-wash: #f3f5f8;
+  --ground-tint: #dde3ea;
+  --ink-hover: #2c2e36;
+  --hairline: rgb(21 22 26 / 0.12);
+
+  /* Text on a full-strength hue stays dark in both themes */
+  --on-hue: #15161a;
+
+  /* Course hues, given in order (bestanden's year hues) */
+  --hue-0: #ffc93c;
+  --hue-1: #2ec4b6;
+  --hue-2: #b49af8;
+  --hue-3: #ff8cc3;
+
+  /* No course: the page is Fog Ground */
+  --hue: var(--ground);
+  --page: var(--hue);
+  --hue-wash: color-mix(in srgb, var(--hue) 14%, var(--paper));
+
+  /* Semantic */
+  --danger: #c8262b;
+  --danger-tint: #ffe3e1;
+
+  /* Lines and depth: outlines plus short, hard ink shadows */
+  --line-w: 2px;
+  --line: var(--line-w) solid var(--ink);
+  --shadow-sm: 2px 2px 0 var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+
+  /* Shape */
+  --r-leaf: 14px;
+  --r-control: 10px;
+  --r-pill: 999px;
+
+  /* Space (4px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* Type */
+  --font-display: "Bricolage Grotesque Variable", "Avenir Next", system-ui, sans-serif;
+  --font-ui: "Manrope Variable", system-ui, sans-serif;
+  --t-xs: 0.75rem;
+  --t-sm: 0.875rem;
+  --t-md: 1rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.375rem;
+  --t-display: clamp(2.25rem, 1.75rem + 2.4vw, 3.75rem);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --dur-fast: 120ms;
+  --dur-slow: 320ms;
+
+  --focus: 3px solid var(--ink);
+  --r-focus: 6px;
+  /* The course hue on the edge of an overview card */
+  --strip: 14px;
+
+  --tap: 44px;
+  --page-max: 760px;
+  --narrow-max: 460px;
+  --gutter: clamp(16px, 3vw, 40px);
+}
+
+[data-hue="0"] { --hue: var(--hue-0); }
+[data-hue="1"] { --hue: var(--hue-1); }
+[data-hue="2"] { --hue: var(--hue-2); }
+[data-hue="3"] { --hue: var(--hue-3); }
+
+/* Dark theme: ink and paper swap places. The hue deepens into the ground and
+   stays full strength wherever it is a fill. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --ink: #f1f2f5;
+    --ink-2: #c3c7d0;
+    --ink-3: #9a9eaa;
+    --paper: #1c1e24;
+    --ground: #101115;
+    --ground-wash: #262931;
+    --ground-tint: #343843;
+    --ink-hover: #d5d8df;
+    --hairline: rgb(241 242 245 / 0.16);
+    --danger: #ff8a8c;
+    --danger-tint: #47191c;
+  }
+
+  [data-hue] {
+    --page: color-mix(in srgb, var(--hue) 24%, var(--ground));
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--ink) transparent;
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-md);
+  font-weight: 500;
+  line-height: 1.5;
+  font-feature-settings: "ss01";
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--dur-slow) var(--ease);
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--line-w);
+  border-radius: var(--r-focus);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: var(--line-w);
+}
+
+/* ---------------------------------------------------------------- leaves */
+
+.leaf {
+  background: var(--paper);
+  border: var(--line);
+  border-radius: var(--r-leaf);
+  box-shadow: var(--shadow);
+  padding: var(--s-5);
+}
+
+@media (max-width: 600px) {
+  .leaf {
+    padding: var(--s-4);
+  }
+}
+
+.leaf-title {
+  font-size: var(--t-xl);
+  margin-bottom: var(--s-3);
+}
+
+.lede {
+  font-weight: 600;
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+.muted {
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.caption {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: var(--tap);
+  padding: 0 var(--s-4);
+  border: var(--line);
+  border-radius: var(--r-control);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: var(--t-sm);
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.btn:not([disabled]):hover {
+  background: var(--hue-wash);
+}
+
+.btn:active {
+  transform: translate(var(--line-w), var(--line-w));
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.btn[disabled] {
+  cursor: not-allowed;
+  color: var(--ink-3);
+  border-color: var(--ink-3);
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-primary:not([disabled]):hover {
+  background: var(--ink-hover);
+}
+
+.btn-quiet {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ----------------------------------------------------------------- field */
+
+.field {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.field-label {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--ink-2);
+  letter-spacing: 0.01em;
+}
+
+.input {
+  width: 100%;
+  min-height: var(--tap);
+  border: var(--line);
+  border-radius: var(--r-control);
+  background-color: var(--paper);
+  color: var(--ink);
+  padding: 0 var(--s-3);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: var(--line-w) var(--line-w) 0 var(--danger);
+}
+
+.note {
+  background: var(--hue-wash);
+  border: var(--line);
+  border-radius: var(--r-control);
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.form-error {
+  background: var(--danger-tint);
+  border: var(--line-w) solid var(--danger);
+  border-radius: var(--r-control);
+  color: var(--danger);
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------ app shell */
+
+.page {
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter) var(--s-7);
+}
+
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding-top: max(var(--s-4), env(safe-area-inset-top));
+  margin-bottom: var(--s-6);
+}
+
+.app-bar-actions {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--t-lg);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: var(--r-control);
+  box-shadow: var(--shadow-sm);
+  padding: var(--s-1) var(--s-3) var(--s-2);
+}
+
+.display {
+  font-size: var(--t-display);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+/* The line under a page title: course, day, time, separated by ink dots. */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-2);
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.meta > * + *::before {
+  content: "·";
+  margin-right: var(--s-2);
+}
+
+.stack {
+  display: grid;
+  gap: var(--s-5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
