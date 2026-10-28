@@ -19,6 +19,7 @@ const lesson: Lesson = {
   standing: [],
   homework: '',
   materials: [],
+  review: null,
 };
 
 const opens = new Date('2026-11-02T08:50:00+01:00');
@@ -65,4 +66,9 @@ test('the notification names the course and when the ticket closes', () => {
   const course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null };
   assert.deepEqual(exitNotice(lesson, course), { title: 'Exit-Ticket ist offen', body: '3a · Informatik · offen bis 09:15' });
   assert.deepEqual(exitNotice(lesson, undefined), { title: 'Exit-Ticket ist offen', body: 'Offen bis 09:15' });
+});
+
+test('it says when the lesson has an anonymous review', () => {
+  const reviewed = { ...lesson, review: ['Was hat dir geholfen?', 'Was sollte sich ändern?'] as [string, string] };
+  assert.deepEqual(exitNotice(reviewed, undefined), { title: 'Exit-Ticket ist offen – mit Bewertung', body: 'Offen bis 09:15' });
 });

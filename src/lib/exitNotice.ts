@@ -29,8 +29,11 @@ export interface Notice {
   body: string;
 }
 
-/** "Exit-Ticket ist offen" / "3a · Informatik · offen bis 09:15" */
+/** "Exit-Ticket ist offen" (or "… – mit Bewertung") / "3a · Informatik · offen bis 09:15" */
 export function exitNotice(lesson: Lesson, course: Course | undefined): Notice {
   const until = `bis ${formatTime(exitClosesAt(lesson))}`;
-  return { title: 'Exit-Ticket ist offen', body: course ? `${course.name} · offen ${until}` : `Offen ${until}` };
+  return {
+    title: lesson.review ? 'Exit-Ticket ist offen – mit Bewertung' : 'Exit-Ticket ist offen',
+    body: course ? `${course.name} · offen ${until}` : `Offen ${until}`,
+  };
 }

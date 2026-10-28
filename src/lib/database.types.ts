@@ -542,6 +542,7 @@ export type Database = {
           homework: string
           id: string
           materials: Json
+          review: string[] | null
           standing: string[]
           starts_at: string
           teacher_id: string
@@ -558,6 +559,7 @@ export type Database = {
           homework?: string
           id: string
           materials?: Json
+          review?: string[] | null
           standing?: string[]
           starts_at: string
           teacher_id: string
@@ -574,6 +576,7 @@ export type Database = {
           homework?: string
           id?: string
           materials?: Json
+          review?: string[] | null
           standing?: string[]
           starts_at?: string
           teacher_id?: string
@@ -583,11 +586,57 @@ export type Database = {
         }
         Relationships: []
       }
+      review_responses: {
+        Row: {
+          answer_1: string | null
+          answer_2: string | null
+          id: string
+          lesson_id: string
+          rating: number
+          teacher_id: string
+        }
+        Insert: {
+          answer_1?: string | null
+          answer_2?: string | null
+          id?: string
+          lesson_id: string
+          rating: number
+          teacher_id: string
+        }
+        Update: {
+          answer_1?: string | null
+          answer_2?: string | null
+          id?: string
+          lesson_id?: string
+          rating?: number
+          teacher_id?: string
+        }
+        Relationships: []
+      }
+      review_submissions: {
+        Row: {
+          lesson_id: string
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          lesson_id: string
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          lesson_id?: string
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      archived: { Args: { doc: Json }; Returns: boolean }
       check_in: {
         Args: { lesson: string; teacher: string }
         Returns: {
@@ -642,6 +691,20 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      open_exit_ticket: { Args: { lesson: string }; Returns: string }
+      review_answered: {
+        Args: { lesson: string; teacher: string }
+        Returns: boolean
+      }
+      review_count: {
+        Args: { lesson: string }
+        Returns: {
+          answered: number
+          enrolled: number
+        }[]
+      }
+      review_prompts: { Args: { review: Json }; Returns: string[] }
+      review_results: { Args: { lesson: string }; Returns: Json }
       set_excused: {
         Args: { lesson: string; mark: boolean; student: string }
         Returns: {
@@ -680,6 +743,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_ticket_excused: {
+        Args: { lesson: string; mark: boolean; student: string }
+        Returns: {
+          course_id: string
+          excused: boolean
+          lesson_id: string
+          ratings: Json
+          student_id: string
+          submitted_at: string | null
+          teacher_id: string
+          unclear: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "exit_tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       status: {
         Args: { "": Database["takt_student"]["Tables"]["check_ins"]["Row"] }
         Returns: {
@@ -713,6 +796,20 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_review: {
+        Args: {
+          answer_1: string
+          answer_2: string
+          lesson: string
+          rating: number
+          teacher: string
+        }
+        Returns: undefined
+      }
+      ticket_kind: {
+        Args: { excused: boolean; submitted_at: string }
+        Returns: string
       }
       ticket_status: {
         Args: { "": Database["takt_student"]["Tables"]["check_ins"]["Row"] }

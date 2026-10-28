@@ -28,6 +28,7 @@ function lesson(day: number, extra: Partial<Lesson> = {}): Lesson {
     standing: [],
     homework: '',
     materials: [],
+    review: null,
     ...extra,
   };
 }

@@ -28,6 +28,7 @@ const lesson: Lesson = {
   standing: [],
   homework: '',
   materials: [],
+  review: null,
 };
 
 const at = (iso: string, deltaMs = 0) => new Date(new Date(iso).getTime() + deltaMs);

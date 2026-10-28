@@ -45,7 +45,7 @@
   <!-- While it is open the exit ticket comes first; once closed, after the lesson's content. -->
   {#snippet exitTicketLeaf()}
     {#if exit.kind !== 'not-open'}
-      <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {onhandin} />
+      <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {now} {onhandin} />
     {/if}
   {/snippet}
 

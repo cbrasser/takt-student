@@ -1,8 +1,8 @@
 /**
  * The student's connection: sign-in, sign-out, reading their lessons from
- * `takt_student`, checking in and handing in exit tickets. Row-level security
- * limits every read to the courses the student is enrolled in, and to their
- * own check-ins and tickets.
+ * `takt_student`, checking in, handing in exit tickets and answering reviews.
+ * Row-level security limits every read to the courses the student is enrolled
+ * in, and to their own check-ins and tickets; nobody reads a review's answers.
  */
 import { createClient, type Session } from '@supabase/supabase-js';
 import type { Database } from './database.types';
@@ -10,6 +10,7 @@ import { appConfig } from './config';
 import { lessonKey, type Course, type Lesson, type MaterialRef } from './lessons';
 import { checkInStatus, type CheckIn } from './checkin';
 import type { ExitTicket, Submission } from './exitTicket';
+import type { ReviewSubmission } from './review';
 
 export const config = appConfig(import.meta.env);
 
@@ -116,6 +117,30 @@ export async function handIn(lesson: Lesson, s: Submission): Promise<{ ticket: E
   return { ticket: exitTicketOf(data, s.note) };
 }
 
+/**
+ * Answers the lesson's anonymous review. The server returns nothing, so
+ * nothing about the answer comes back. A refusal comes back as the reason
+ * `takt_student.submit_review()` raised (`review_answered`, ...), or undefined
+ * when the request didn't get through.
+ */
+export async function answerReview(lesson: Lesson, s: ReviewSubmission): Promise<{ refused: string | undefined } | null> {
+  const { error } = await supabase.rpc('submit_review', {
+    teacher: lesson.teacherId,
+    lesson: lesson.id,
+    rating: s.rating,
+    answer_1: s.answer1,
+    answer_2: s.answer2,
+  });
+  if (!error) return null;
+  return { refused: error.code === 'P0001' ? error.message : undefined };
+}
+
+/** Has the student answered the lesson's review? Undefined when the request didn't get through. */
+export async function reviewAnswered(lesson: Lesson): Promise<boolean | undefined> {
+  const { data, error } = await supabase.rpc('review_answered', { teacher: lesson.teacherId, lesson: lesson.id });
+  return error ? undefined : data;
+}
+
 export async function loadStudentData(): Promise<StudentData> {
   const [lessons, courses, checkIns, tickets, notes] = await Promise.all([
     supabase.from('lessons').select('*').order('starts_at'),
@@ -144,6 +169,7 @@ export async function loadStudentData(): Promise<StudentData> {
       standing: r.standing,
       homework: r.homework,
       materials: materialRefs(r.materials),
+      review: r.review?.length === 2 ? [r.review[0], r.review[1]] : null,
     })),
     courses: courses.data.map((r) => ({
       teacherId: r.teacher_id,
