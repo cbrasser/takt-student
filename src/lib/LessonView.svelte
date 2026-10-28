@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AssessmentBadges from './AssessmentBadges.svelte';
+  import type { Assessment } from './assessments';
   import type { CheckIn } from './checkin';
   import CheckInButton from './CheckInButton.svelte';
   import ExitTicketLeaf from './ExitTicketLeaf.svelte';
@@ -13,18 +15,23 @@
     previous,
     checkIn,
     exitTicket,
+    assessments,
     now,
     oncheckin,
     onhandin,
+    onassessment,
   }: {
     lesson: Lesson;
     course: Course | undefined;
     previous: Lesson | null;
     checkIn: CheckIn | undefined;
     exitTicket: ExitTicket | undefined;
+    /** Its course's Prüfungen and Abgaben on its day, as badges. */
+    assessments: Assessment[];
     now: Date;
     oncheckin: (c: CheckIn) => void;
     onhandin: (t: ExitTicket) => void;
+    onassessment: (a: Assessment) => void;
   } = $props();
 
   const siteUrl = $derived(course?.siteUrl ?? null);
@@ -39,6 +46,7 @@
       <span>{formatTimes(lesson.startsAt, lesson.endsAt)}</span>
     </p>
     <h1 class="display">{lesson.topic || 'Noch kein Thema'}</h1>
+    <AssessmentBadges {assessments} onopen={onassessment} />
     <CheckInButton {lesson} {checkIn} {now} {oncheckin} />
   </header>
 

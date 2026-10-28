@@ -7,7 +7,8 @@
 import { createClient, type Session } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { appConfig } from './config';
-import { lessonKey, type Course, type Lesson, type MaterialRef } from './lessons';
+import { lessonKey, type Course, type Lesson, type MaterialRef, type Semester } from './lessons';
+import type { Assessment } from './assessments';
 import { checkInStatus, type CheckIn } from './checkin';
 import type { ExitTicket, Submission } from './exitTicket';
 import type { ReviewSubmission } from './review';
@@ -51,6 +52,8 @@ export interface StudentData {
   checkIns: CheckIn[];
   /** The student's own, both parts. */
   exitTickets: ExitTicket[];
+  /** The Prüfungen and Abgaben of the student's courses, past and ahead. */
+  assessments: Assessment[];
 }
 
 // `status` is takt_student.status(), which PostgREST serves as a column.
@@ -141,19 +144,52 @@ export async function reviewAnswered(lesson: Lesson): Promise<boolean | undefine
   return error ? undefined : data;
 }
 
+const ASSESSMENT_COLUMNS = 'teacher_id, id, course_id, date, kind, title, deadline, pages, goals, practice_url, free_text';
+
+/** One row of `takt_student.assessments`; a kind this app doesn't know reads as a Prüfung. */
+function assessmentOf(r: {
+  teacher_id: string;
+  id: string;
+  course_id: string;
+  date: string;
+  kind: string;
+  title: string;
+  deadline: string | null;
+  pages: unknown;
+  goals: string[];
+  practice_url: string;
+  free_text: string;
+}): Assessment {
+  return {
+    teacherId: r.teacher_id,
+    id: r.id,
+    courseId: r.course_id,
+    date: r.date,
+    kind: r.kind === 'hand-in' ? 'hand-in' : 'test',
+    title: r.title,
+    deadline: r.deadline ? new Date(r.deadline) : null,
+    pages: materialRefs(r.pages),
+    goals: r.goals,
+    practiceUrl: r.practice_url,
+    freeText: r.free_text,
+  };
+}
+
 export async function loadStudentData(): Promise<StudentData> {
-  const [lessons, courses, checkIns, tickets, notes] = await Promise.all([
+  const [lessons, courses, checkIns, tickets, notes, assessments] = await Promise.all([
     supabase.from('lessons').select('*').order('starts_at'),
     supabase.from('courses').select('*'),
     supabase.from('check_ins').select(CHECK_IN_COLUMNS),
     supabase.from('exit_tickets').select(TICKET_COLUMNS),
     supabase.from('exit_notes').select('teacher_id, lesson_id, note'),
+    supabase.from('assessments').select(ASSESSMENT_COLUMNS).order('date'),
   ]);
   if (lessons.error) throw lessons.error;
   if (courses.error) throw courses.error;
   if (checkIns.error) throw checkIns.error;
   if (tickets.error) throw tickets.error;
   if (notes.error) throw notes.error;
+  if (assessments.error) throw assessments.error;
   // Each course's check-in start: the day only, as a student reads no one else's check-in.
   const starts = await Promise.all(
     courses.data.map((c) => supabase.rpc('check_in_start', { teacher: c.teacher_id, course: c.id })),
@@ -183,10 +219,18 @@ export async function loadStudentData(): Promise<StudentData> {
       teacherName: r.teacher_name,
       checkInStart: starts[i].data ?? null,
       siteUrl: r.site_url,
+      semesters: semestersOf(r.semesters),
     })),
     checkIns: checkIns.data.map(checkInOf),
     exitTickets: tickets.data.map((t) => exitTicketOf(t, noteOf.get(lessonKey({ teacherId: t.teacher_id, id: t.lesson_id })))),
+    assessments: assessments.data.map(assessmentOf),
   };
+}
+
+/** The course summary's `semesters`, `[{start, end}]` as days. */
+function semestersOf(json: unknown): Semester[] {
+  if (!Array.isArray(json)) return [];
+  return json.flatMap((s) => (s && typeof s.start === 'string' && typeof s.end === 'string' ? [{ start: s.start, end: s.end }] : []));
 }
 
 function materialRefs(json: unknown): MaterialRef[] {

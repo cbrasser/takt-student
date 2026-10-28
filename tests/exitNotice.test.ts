@@ -63,7 +63,7 @@ test('it fires when the teacher opens the ticket early', () => {
 });
 
 test('the notification names the course and when the ticket closes', () => {
-  const course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null, checkInStart: null };
+  const course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null, checkInStart: null, semesters: [] };
   assert.deepEqual(exitNotice(lesson, course), { title: 'Exit-Ticket ist offen', body: '3a · Informatik · offen bis 09:15' });
   assert.deepEqual(exitNotice(lesson, undefined), { title: 'Exit-Ticket ist offen', body: 'Offen bis 09:15' });
 });

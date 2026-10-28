@@ -36,3 +36,18 @@ export function formatDate(d: Date): string {
 export function isoDay(d: Date): string {
   return iso.format(d);
 }
+
+// Noon UTC is the same day in Zurich, whatever the season.
+const noonOf = (day: string) => new Date(`${day}T12:00:00Z`);
+
+/** "Montag, 9. November" for "2026-11-09", an assessment's day. */
+export function formatIsoDay(day: string): string {
+  return formatDay(noonOf(day));
+}
+
+const dayMonth = new Intl.DateTimeFormat('de-CH', { timeZone: ZONE, day: 'numeric', month: 'long' });
+
+/** "Woche vom 9. November", for the week's Monday. */
+export function formatWeek(monday: string): string {
+  return `Woche vom ${dayMonth.format(noonOf(monday))}`;
+}

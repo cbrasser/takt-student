@@ -133,7 +133,7 @@ test('only web addresses become links', () => {
 });
 
 test('courses take the hues in order of their name, and wrap after four', () => {
-  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, teacherName: null, siteUrl: null, checkInStart: null });
+  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, teacherName: null, siteUrl: null, checkInStart: null, semesters: [] });
   const hues = courseHues([course('e', '5a'), course('a', '1a'), course('c', '3a'), course('b', '2a'), course('d', '4a')]);
   assert.deepEqual(
     ['a', 'b', 'c', 'd', 'e'].map((id) => hues.get(`anna/${id}`)),
@@ -142,7 +142,7 @@ test('courses take the hues in order of their name, and wrap after four', () => 
 });
 
 test('the courses in order of their name, the same teacher\'s order for equal names', () => {
-  const course = (teacherId: string, id: string, name: string): Course => ({ teacherId, id, name, teacherName: null, siteUrl: null, checkInStart: null });
+  const course = (teacherId: string, id: string, name: string): Course => ({ teacherId, id, name, teacherName: null, siteUrl: null, checkInStart: null, semesters: [] });
   const sorted = coursesByName([course('ben', 'x', 'Übungen'), course('anna', 'b', 'Mathe'), course('anna', 'a', 'Mathe'), course('anna', 'c', 'Biologie')]);
   assert.deepEqual(sorted.map((c) => `${c.teacherId}/${c.id}`), ['anna/c', 'anna/a', 'anna/b', 'ben/x']);
 });

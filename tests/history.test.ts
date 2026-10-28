@@ -11,7 +11,7 @@ import type { Course, Lesson } from '../src/lib/lessons.ts';
 const MIN = 60_000;
 
 // Check-in started before every lesson below, unless a test says otherwise.
-const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null, checkInStart: '2026-11-01' };
+const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null, checkInStart: '2026-11-01', semesters: [] };
 
 /** A lesson of the course, 08:15–09:00 Zurich time on the given November day. */
 function lesson(day: number, extra: Partial<Lesson> = {}): Lesson {
@@ -281,7 +281,7 @@ test('before the start, her own ticket still shows', () => {
 
 test('a course without check-ins has no status anywhere', () => {
   const l = lesson(2);
-  const [entry] = courseHistory([l], { ...course, checkInStart: null }, [], [], new Date('2026-11-30T12:00:00+01:00'));
+  const [entry] = courseHistory([l], { ...course, checkInStart: null, semesters: [] }, [], [], new Date('2026-11-30T12:00:00+01:00'));
   assert.equal(entry.attendance, null);
   assert.equal(entry.ticket, 'not_required');
 });

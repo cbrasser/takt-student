@@ -10,6 +10,39 @@ export type Json =
 export type Database = {
   takt: {
     Tables: {
+      assessments: {
+        Row: {
+          course_id: string | null
+          date: string | null
+          doc: Json
+          id: string
+          kind: string | null
+          removed: boolean | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          course_id?: string | null
+          date?: string | null
+          doc: Json
+          id: string
+          kind?: string | null
+          removed?: boolean | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string | null
+          date?: string | null
+          doc?: Json
+          id?: string
+          kind?: string | null
+          removed?: boolean | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cbratest_courses: {
         Row: {
           id: string
@@ -389,6 +422,39 @@ export type Database = {
         }
         Relationships: []
       }
+      topics: {
+        Row: {
+          course_id: string | null
+          doc: Json
+          ends_on: string | null
+          id: string
+          removed: boolean | null
+          starts_on: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          course_id?: string | null
+          doc: Json
+          ends_on?: string | null
+          id: string
+          removed?: boolean | null
+          starts_on?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string | null
+          doc?: Json
+          ends_on?: string | null
+          id?: string
+          removed?: boolean | null
+          starts_on?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -397,6 +463,7 @@ export type Database = {
       add_teacher: { Args: { teacher: string }; Returns: undefined }
       is_teacher: { Args: never; Returns: boolean }
       iso_date: { Args: { d: string }; Returns: string }
+      iso_instant: { Args: { t: string }; Returns: string }
       roster_wanted: {
         Args: { teacher: string }
         Returns: {
@@ -415,6 +482,51 @@ export type Database = {
   }
   takt_student: {
     Tables: {
+      assessments: {
+        Row: {
+          course_id: string
+          date: string
+          deadline: string | null
+          free_text: string
+          goals: string[]
+          id: string
+          kind: string
+          pages: Json
+          practice_url: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          date: string
+          deadline?: string | null
+          free_text?: string
+          goals?: string[]
+          id: string
+          kind: string
+          pages?: Json
+          practice_url?: string
+          teacher_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          date?: string
+          deadline?: string | null
+          free_text?: string
+          goals?: string[]
+          id?: string
+          kind?: string
+          pages?: Json
+          practice_url?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       check_ins: {
         Row: {
           checked_in_at: string | null
@@ -460,6 +572,7 @@ export type Database = {
         Row: {
           id: string
           name: string
+          semesters: Json
           site_url: string | null
           teacher_id: string
           teacher_name: string | null
@@ -468,6 +581,7 @@ export type Database = {
         Insert: {
           id: string
           name: string
+          semesters?: Json
           site_url?: string | null
           teacher_id: string
           teacher_name?: string | null
@@ -476,6 +590,7 @@ export type Database = {
         Update: {
           id?: string
           name?: string
+          semesters?: Json
           site_url?: string | null
           teacher_id?: string
           teacher_name?: string | null
@@ -705,9 +820,22 @@ export type Database = {
         Args: { course: string; teacher: string }
         Returns: string
       }
+      copy_assessment: {
+        Args: { assessment: string; teacher: string }
+        Returns: undefined
+      }
       copy_courses: { Args: { teacher: string }; Returns: undefined }
       copy_lesson: {
         Args: { lesson: string; teacher: string }
+        Returns: undefined
+      }
+      copy_lessons_between: {
+        Args: {
+          course: string
+          from_day: string
+          teacher: string
+          to_day: string
+        }
         Returns: undefined
       }
       is_enrolled:
@@ -865,6 +993,10 @@ export type Database = {
         Returns: {
           error: true
         } & "the function takt_student.ticket_status with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
+      }
+      topic_title: {
+        Args: { course: string; day: string; teacher: string }
+        Returns: string
       }
       valid_ratings: { Args: { ratings: Json }; Returns: boolean }
     }

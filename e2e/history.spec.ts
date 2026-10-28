@@ -93,10 +93,10 @@ async function openHistory(page: Page, email: string) {
   await page.getByRole('button', { name: 'Anmelden' }).click();
   // A running lesson opens by itself; the Verlauf is on the overview.
   const overview = page.getByRole('button', { name: 'Übersicht' });
-  const courses = page.getByRole('region', { name: 'Verlauf' });
+  const courses = page.getByRole('region', { name: 'Deine Kurse' });
   await expect(overview.or(courses)).toBeVisible();
   if (await overview.isVisible()) await overview.click();
-  await courses.getByRole('button', { name: courseName }).click();
+  await courses.getByRole('button', { name: `Verlauf · ${courseName}` }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Verlauf');
 }
 
