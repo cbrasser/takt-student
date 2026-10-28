@@ -48,7 +48,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "UPDATER_PUBLIC_KEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdCNjI3QzVENzkzQjg5M0UKUldRK2lUdDVYWHhpZXhqOHN2blB4ZWJlNkxpeGRTZDR5U0VFWnJIcnI5ZmpNbGx5R1owRzM1YloK",
       "endpoints": ["https://github.com/cbrasser/takt-student/releases/latest/download/latest.json"],
       "windows": {
         "installMode": "passive"
