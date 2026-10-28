@@ -1,0 +1,111 @@
+# A `v*` tag builds the macOS and Windows installers and publishes them as a
+# GitHub Release with the updater manifest. The tag is the version:
+#
+#     git tag v0.2.0 && git push origin v0.2.0
+#
+# Every asset has the same name in every release, so the install page links to
+# releases/latest/download/<name>, and the installed apps read latest.json
+# from there. The release stays a draft until both platforms and the manifest
+# are up; a failed run leaves only a draft behind (delete it and the tag, then
+# tag again).
+#
+# Secrets: TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD,
+# the updater key (scripts/updater-key.sh). Its public half is in
+# src-tauri/tauri.conf.json.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  INSTALL_PAGE: https://app.cbratest.ch/installieren
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Draft the release
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "Takt Student ${GITHUB_REF_NAME#v}" \
+            --generate-notes \
+            --notes "**Installieren:** $INSTALL_PAGE – mit der Anleitung für die einmalige Freigabe auf macOS und Windows. Wer Takt schon hat, bekommt das Update in der App."
+
+  build:
+    needs: draft
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: universal-apple-darwin
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust-targets: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm test
+      - name: Build the installer
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          npm run tauri:release -- --ci --target ${{ matrix.target }} \
+            --config "{\"version\":\"${GITHUB_REF_NAME#v}\"}"
+      - name: Upload to the release
+        run: |
+          bundle="src-tauri/target/${{ matrix.target }}/release/bundle"
+          mkdir out
+          if [ "$RUNNER_OS" = macOS ]; then
+            cp "$bundle"/dmg/*.dmg out/Takt-Student-macOS.dmg
+            cp "$bundle"/macos/*.app.tar.gz out/Takt-Student-macOS.app.tar.gz
+            cp "$bundle"/macos/*.app.tar.gz.sig out/Takt-Student-macOS.app.tar.gz.sig
+          else
+            cp "$bundle"/nsis/*-setup.exe out/Takt-Student-Windows-Setup.exe
+            cp "$bundle"/nsis/*-setup.exe.sig out/Takt-Student-Windows-Setup.exe.sig
+          fi
+          ls -l out
+          gh release upload "$GITHUB_REF_NAME" out/* --clobber
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Write the updater manifest
+        run: |
+          gh release download "$GITHUB_REF_NAME" --pattern '*.sig' --dir sigs
+          node scripts/release-manifest.ts "$GITHUB_REF_NAME" sigs > latest.json
+          cat latest.json
+          gh release upload "$GITHUB_REF_NAME" latest.json --clobber
+      - name: Publish the release
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest

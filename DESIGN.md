@@ -18,6 +18,12 @@ Follows the system setting. Ink and paper swap as in bestanden; the page is the 
 - **Empty:** "Noch keine Lektionen" as the title and a lede saying lessons appear once the teacher plans them.
 - **Offline:** a note above the content, "Keine Verbindung. Stand 08:15.", while the last lessons read stay on screen.
 
+- **Update:** in the release desktop app only, a leaf fixed to the bottom right (460px at most): "Neue Version von Takt", the version and that Takt restarts, then a quiet "Später" and the primary "Aktualisieren" ("Wird installiert …" while it runs). A failure is an error box inside the leaf.
+
+## Install page
+
+`installieren.html` (`/installieren` on the web), on Fog Ground with the app's tokens (`src/install.css`): the wordmark, "Takt installieren" as the display title and a lede; two download leaves side by side (macOS, Windows), each a caption, the platform name in Bricolage and a primary "Herunterladen"; a note on the one-time approval; then one leaf each for the macOS and Windows steps (numbered, the button names in bold and «»), "Updates" and "Im Browser".
+
 ## Material links
 
 Each material is a link in label weight with a "↗" after it, at least 44px tall. A path the app can't link (no site URL for the course) is shown as plain text.

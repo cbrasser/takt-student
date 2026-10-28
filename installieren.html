@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de-CH">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Takt installieren</title>
+    <meta name="description" content="Takt für deinen Mac oder Windows-Laptop herunterladen und einmal freigeben." />
+  </head>
+  <body>
+    <main class="page install">
+      <header class="app-bar"><span class="wordmark">Takt</span></header>
+
+      <section class="head stack">
+        <h1 class="display">Takt installieren</h1>
+        <p class="lede">
+          Takt zeigt dir die Lektion, die gerade läuft: Thema, Ziele, Hausaufgaben und Material. Lade die App für deinen
+          Laptop herunter und melde dich mit dem Konto an, das du auch für CBRATest brauchst.
+        </p>
+      </section>
+
+      <section class="downloads" aria-label="Herunterladen">
+        <a class="leaf download" href="https://github.com/cbrasser/takt-student/releases/latest/download/Takt-Student-macOS.dmg">
+          <span class="caption">Für Mac, Apple Silicon und Intel</span>
+          <span class="download-title">macOS</span>
+          <span class="btn btn-primary">Herunterladen</span>
+        </a>
+        <a class="leaf download" href="https://github.com/cbrasser/takt-student/releases/latest/download/Takt-Student-Windows-Setup.exe">
+          <span class="caption">Für Windows 10 und 11, ohne Administratorrechte</span>
+          <span class="download-title">Windows</span>
+          <span class="btn btn-primary">Herunterladen</span>
+        </a>
+      </section>
+
+      <p class="note">
+        Takt ist nicht bei Apple oder Microsoft registriert. Darum fragt dein Laptop beim ersten Öffnen einmal nach, ob du der
+        App vertraust. So gibst du sie frei:
+      </p>
+
+      <section class="leaf" id="macos" aria-labelledby="macos-title">
+        <h2 class="leaf-title" id="macos-title">macOS</h2>
+        <ol class="steps">
+          <li>Öffne die heruntergeladene Datei «Takt-Student-macOS.dmg» und ziehe «Takt Student» in den Ordner «Programme».</li>
+          <li>
+            Öffne «Takt Student» im Ordner «Programme». macOS meldet, dass es die App nicht überprüfen kann. Klicke auf
+            «Fertig».
+          </li>
+          <li>
+            Öffne die <strong>Systemeinstellungen</strong> und wähle <strong>Datenschutz &amp; Sicherheit</strong>. Scrolle
+            nach unten bis «Sicherheit»: Dort steht, dass «Takt Student» blockiert wurde. Klicke auf
+            <strong>«Dennoch öffnen»</strong>.
+          </li>
+          <li>Bestätige mit deinem Passwort oder Touch ID und klicke im nächsten Fenster nochmals auf «Dennoch öffnen».</li>
+        </ol>
+      </section>
+
+      <section class="leaf" id="windows" aria-labelledby="windows-title">
+        <h2 class="leaf-title" id="windows-title">Windows</h2>
+        <ol class="steps">
+          <li>
+            Warnt dein Browser beim Herunterladen, dass die Datei selten heruntergeladen wird, behalte sie trotzdem (in Edge:
+            «…» und dann «Beibehalten»).
+          </li>
+          <li>
+            Öffne «Takt-Student-Windows-Setup.exe». Windows zeigt «Der Computer wurde durch Windows geschützt». Klicke auf
+            <strong>«Weitere Informationen»</strong> und dann auf <strong>«Trotzdem ausführen»</strong>.
+          </li>
+          <li>Takt installiert sich nur für dich, ohne Administratorrechte. Danach findest du «Takt Student» im Startmenü.</li>
+        </ol>
+      </section>
+
+      <section class="leaf" aria-labelledby="updates-title">
+        <h2 class="leaf-title" id="updates-title">Updates</h2>
+        <p>
+          Das Freigeben musst du nur einmal machen. Neue Versionen holt Takt selbst: Die App fragt dich, ob sie sich jetzt
+          aktualisieren soll, und startet danach neu. Eine zweite Freigabe braucht es dafür nicht.
+        </p>
+      </section>
+
+      <section class="leaf" aria-labelledby="web-title">
+        <h2 class="leaf-title" id="web-title">Im Browser</h2>
+        <p>
+          Auf einem Schulcomputer oder einem Chromebook läuft Takt auch im Browser:
+          <a href="https://app.cbratest.ch">app.cbratest.ch</a>. Du meldest dich dort mit dem gleichen Konto an.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="/src/install.ts"></script>
+  </body>
+</html>

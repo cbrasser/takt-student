@@ -1,5 +1,7 @@
 # Takt for students
 
+**Install it:** [app.cbratest.ch/installieren](https://app.cbratest.ch/installieren) (German, with the one-time approval on macOS and Windows), or use it in the browser at [app.cbratest.ch](https://app.cbratest.ch).
+
 Students sign in and see their lesson: the one on now opens by itself, with today's topic and goals, where the class stands, the homework, links to the materials and what happened last lesson. A desktop app for Windows and macOS, built with Tauri 2 and Svelte 5, with the same app on the web as a fallback. The teacher plans in [Takt](https://github.com/cbrasser/teaching-assistant); what students see is a filtered copy that `cbra-platform` builds in the `takt_student` schema, so a teacher's cues and notes never reach this app.
 
 Tickets live in the [teaching-assistant tracker](https://github.com/cbrasser/teaching-assistant/issues) (`Repo: takt-student`); the design brief is `briefs/student-app.md` there.
@@ -27,7 +29,16 @@ As the desktop app (needs Rust: https://rustup.rs):
 npm run tauri dev
 ```
 
-Every build talks to a local stack only: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` at build time, defaulting to `http://127.0.0.1:54321` and its anon key; anything that isn't localhost is refused. "Passwort vergessen" and "Konto erstellen" open the account site, `VITE_ACCOUNT_URL`, by default the local one (`pnpm dev` in `cbra-platform/apps/account`, port 3100). Release builds, the updater and the web deployment come with #31.
+Every local build talks to a local stack only: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` at build time, defaulting to `http://127.0.0.1:54321` and its anon key; anything that isn't localhost is refused. "Passwort vergessen" and "Konto erstellen" open the account site, `VITE_ACCOUNT_URL`, by default the local one (`pnpm dev` in `cbra-platform/apps/account`, port 3100). Only the release build talks to production (below).
+
+## Release
+
+The release build (`npm run build:release`, Vite's `release` mode) talks to the production project and `accounts.cbratest.ch`, whatever the environment says; it is the only one that looks for updates.
+
+- **Installers:** push a tag `v<version>` (`git tag v0.2.0 && git push origin v0.2.0`). [`release.yml`](.github/workflows/release.yml) builds an ad-hoc-signed universal `.dmg` and a per-user NSIS installer, uploads them with the signed updater files under the same names in every release, writes `latest.json` (`scripts/release-manifest.ts`) and publishes the release. The tag is the version; `tauri.conf.json`'s is only for local builds. There's no minimum-version gate: schema changes stay additive.
+- **Updates:** the app reads `releases/latest/download/latest.json` on start and every 6 hours, asks the student, then installs and restarts. The updater key (`scripts/updater-key.sh`, once) is the repo secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; its public half is in `src-tauri/tauri.conf.json`. Losing the private key means every student reinstalls by hand.
+- **Web:** Vercel (fra1) builds `npm run build:release` from `main` for `app.cbratest.ch` ([`vercel.json`](vercel.json)), with the install page at `/installieren`. Only production builds; previews are skipped, since a preview would talk to production too.
+- **Locally:** `npm run tauri:release` builds the release app (it needs the updater key in `TAURI_SIGNING_PRIVATE_KEY`); `npm run tauri build` builds a local one without updater files.
 
 ## Tests
 
@@ -45,7 +56,11 @@ Every build talks to a local stack only: `VITE_SUPABASE_URL` and `VITE_SUPABASE_
 
 - `src/lib/lessons.ts`: which lesson is current, next and last, the previous lesson, material URLs, course hues. Pure, tested in `tests/`.
 - `src/lib/supabase.ts`: the connection, sign-in and the reads from `takt_student`.
-- `src/lib/config.ts`: which stack and which account site a build talks to.
+- `src/lib/config.ts`: which stack and which account site a build talks to, local or release.
+- `src/lib/Update.svelte`: the update prompt of the release desktop app.
+- `installieren.html`, `src/install.ts`, `src/install.css`: the install page.
+- `scripts/release-manifest.ts`: the updater manifest of a release. Pure, tested in `tests/`.
+- `.github/workflows/`: `ci.yml` runs `npm run verify`; `release.yml` publishes a tag.
 - `src/lib/database.types.ts`: generated from the local stack with `npm run db:types`; don't edit.
 - `src/app.css`: the design tokens, light and dark ([DESIGN.md](DESIGN.md)).
-- `src-tauri/`: the desktop shell, one window; links open in the browser.
+- `src-tauri/`: the desktop shell, one window; links open in the browser. `tauri.release.conf.json` is what the release build adds: the production CSP, the release frontend and the updater files.
