@@ -1,17 +1,15 @@
 <script lang="ts">
   import AssessmentBadges from './AssessmentBadges.svelte';
-  import { countdown, currentSemester, kindLabel, type Assessment, type UpcomingWeek } from './assessments';
-  import { formatIsoDay, formatTimes, formatWeek, isoDay } from './format';
+  import { assessmentKey, countdown, kindLabel, type Assessment, type Upcoming } from './assessments';
+  import { formatIsoDay, formatTimes, formatWeek } from './format';
   import { lessonKey, type Course } from './lessons';
 
   let {
     course,
-    weeks,
+    upcoming,
     now,
     onassessment,
-  }: { course: Course; weeks: UpcomingWeek[]; now: Date; onassessment: (a: Assessment) => void } = $props();
-
-  const semester = $derived(currentSemester(course.semesters, isoDay(now)));
+  }: { course: Course; upcoming: Upcoming; now: Date; onassessment: (a: Assessment) => void } = $props();
 </script>
 
 <section class="stack" aria-labelledby="upcoming-title">
@@ -19,14 +17,14 @@
     <p class="meta"><span>{course.name}</span></p>
     <h1 class="display" id="upcoming-title">Demnächst</h1>
     <p class="muted">
-      {semester ? `Bis Ende Semester, ${formatIsoDay(semester.end)}.` : 'Alle kommenden Lektionen.'}
+      {upcoming.end ? `Bis Ende Semester, ${formatIsoDay(upcoming.end)}.` : 'Alle kommenden Lektionen.'}
     </p>
   </header>
 
-  {#if weeks.length === 0}
-    <p class="lede">Keine Lektionen mehr in diesem Semester.</p>
+  {#if upcoming.weeks.length === 0}
+    <p class="lede">{upcoming.end ? 'Bis Ende Semester ist nichts mehr geplant.' : 'Noch nichts geplant.'}</p>
   {:else}
-    {#each weeks as week (week.start)}
+    {#each upcoming.weeks as week (week.start)}
       <section class="leaf week" aria-labelledby="week-{week.start}">
         <h2 class="leaf-title" id="week-{week.start}">{formatWeek(week.start)}</h2>
         <ol class="days">
@@ -41,10 +39,10 @@
                     <AssessmentBadges assessments={day.assessments} />
                   </li>
                 {/each}
-                {#each day.assessments as a (a.id)}
+                {#each day.assessments as a (assessmentKey(a))}
                   <li>
                     <button class="assessment" onclick={() => onassessment(a)}>
-                      <span class="badge" class:badge-test={a.kind === 'test'}>{kindLabel(a.kind)}</span>
+                      <AssessmentBadges assessments={[a]} />
                       <span class="title">{a.title || kindLabel(a.kind)}</span>
                       {#if a.deadline}<span class="muted">{countdown(a.deadline, now)}</span>{/if}
                     </button>

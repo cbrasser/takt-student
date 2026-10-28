@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { kindLabel, type Assessment } from './assessments';
+  import { assessmentKey, kindLabel, type Assessment } from './assessments';
 
   /** "Prüfung" or "Abgabe" for each assessment of a lesson or a day; each opens its details page when `onopen` is given. */
   let { assessments, onopen }: { assessments: Assessment[]; onopen?: (a: Assessment) => void } = $props();
@@ -7,7 +7,7 @@
 
 {#if assessments.length > 0}
   <span class="badges">
-    {#each assessments as a (a.id)}
+    {#each assessments as a (assessmentKey(a))}
       {#if onopen}
         <button class="badge" class:badge-test={a.kind === 'test'} aria-label="{kindLabel(a.kind)}: {a.title}" onclick={() => onopen(a)}>
           {kindLabel(a.kind)}

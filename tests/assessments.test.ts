@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assessmentsOn, countdown, hasDetails, kindLabel, linkify, nextAssessments, upcomingWeeks, type Assessment, type UpcomingWeek } from '../src/lib/assessments.ts';
+import { assessmentKey, assessmentsOn, countdown, hasDetails, kindLabel, linkify, nextAssessments, upcoming, type Assessment, type Upcoming } from '../src/lib/assessments.ts';
 import type { Course, Lesson } from '../src/lib/lessons.ts';
 
 const MIN = 60_000;
@@ -72,7 +72,7 @@ function assessment(id: string, date: string, extra: Partial<Assessment> = {}): 
 }
 
 /** Each week as "Monday: day [lesson topics | assessment ids]; …". */
-const shape = (weeks: UpcomingWeek[]) =>
+const shape = ({ weeks }: Upcoming) =>
   weeks.map((w) => `${w.start}: ${w.days.map((d) => `${d.date} [${[...d.lessons.map((l) => l.topic), ...d.assessments.map((a) => a.id)].join(', ')}]`).join('; ')}`);
 
 // Wednesday 4 November 2026, 10:00 in Zurich.
@@ -83,7 +83,7 @@ test('Demnächst: the course\'s lessons ahead, grouped by week from Monday, up t
     { start: '2026-08-17', end: '2027-01-29' },
     { start: '2027-02-08', end: '2027-07-02' },
   ];
-  const weeks = upcomingWeeks(
+  const weeks = upcoming(
     [
       lesson('2026-11-02'), // over
       lesson('2026-11-04', { topic: 'heute, vorbei', endsAt: new Date('2026-11-04T09:00:00+01:00') }),
@@ -98,6 +98,7 @@ test('Demnächst: the course\'s lessons ahead, grouped by week from Monday, up t
     { ...course, semesters },
     now,
   );
+  assert.equal(weeks.end, '2027-01-29');
   assert.deepEqual(shape(weeks), [
     '2026-11-02: 2026-11-04 [heute]; 2026-11-06 [Thema 2026-11-06]',
     '2026-11-09: 2026-11-09 [Thema 2026-11-09]',
@@ -106,7 +107,8 @@ test('Demnächst: the course\'s lessons ahead, grouped by week from Monday, up t
 });
 
 test('Demnächst: without a school year, all lessons ahead', () => {
-  const weeks = upcomingWeeks([lesson('2026-11-06'), lesson('2027-06-30')], [], course, now);
+  const weeks = upcoming([lesson('2026-11-06'), lesson('2027-06-30')], [], course, now);
+  assert.equal(weeks.end, null);
   assert.deepEqual(shape(weeks), ['2026-11-02: 2026-11-06 [Thema 2026-11-06]', '2027-06-28: 2027-06-30 [Thema 2027-06-30]']);
 });
 
@@ -114,12 +116,12 @@ test('Demnächst: between semesters, up to the next one\'s end; after the last, 
   const summer = new Date('2027-07-20T10:00:00+02:00');
   const lessons = [lesson('2027-08-18'), lesson('2028-01-26'), lesson('2028-02-09')];
   const next = [{ start: '2027-02-08', end: '2027-07-02' }, { start: '2027-08-16', end: '2028-01-28' }];
-  assert.deepEqual(upcomingWeeks(lessons, [], { ...course, semesters: next }, summer).map((w) => w.start), ['2027-08-16', '2028-01-24']);
-  assert.deepEqual(upcomingWeeks(lessons, [], { ...course, semesters: next.slice(0, 1) }, summer).map((w) => w.start), ['2027-08-16', '2028-01-24', '2028-02-07']);
+  assert.deepEqual(upcoming(lessons, [], { ...course, semesters: next }, summer).weeks.map((w) => w.start), ['2027-08-16', '2028-01-24']);
+  assert.deepEqual(upcoming(lessons, [], { ...course, semesters: next.slice(0, 1) }, summer).weeks.map((w) => w.start), ['2027-08-16', '2028-01-24', '2028-02-07']);
 });
 
 test('Demnächst: an assessment on a day without a lesson gets its own day; several on one day, Prüfungen first', () => {
-  const weeks = upcomingWeeks(
+  const weeks = upcoming(
     [lesson('2026-11-09')],
     [
       assessment('abgabe-sa', '2026-11-14', { kind: 'hand-in' }),
@@ -135,7 +137,7 @@ test('Demnächst: an assessment on a day without a lesson gets its own day; seve
 });
 
 test('Demnächst: an assessment today is still ahead, and a week can hold only assessments', () => {
-  const weeks = upcomingWeeks([], [assessment('heute', '2026-11-04'), assessment('naechste', '2026-11-11')], course, now);
+  const weeks = upcoming([], [assessment('heute', '2026-11-04'), assessment('naechste', '2026-11-11')], course, now);
   assert.deepEqual(shape(weeks), ['2026-11-02: 2026-11-04 [heute]', '2026-11-09: 2026-11-11 [naechste]']);
 });
 
@@ -187,4 +189,15 @@ test('details: the free text\'s web addresses become links, without the punctuat
   ]);
   assert.deepEqual(linkify('Kein Link: javascript:alert(1)'), [{ text: 'Kein Link: javascript:alert(1)' }]);
   assert.deepEqual(linkify(''), []);
+});
+
+test('an Abgabe dated before today whose deadline is still ahead stays ahead, under today', () => {
+  const late = assessment('frist-spaeter', '2026-11-02', { kind: 'hand-in', deadline: new Date('2026-11-06T18:00:00+01:00') });
+  const over = assessment('frist-vorbei', '2026-11-02', { kind: 'hand-in', deadline: new Date('2026-11-03T18:00:00+01:00') });
+  assert.deepEqual(shape(upcoming([], [late, over], course, now)), ['2026-11-02: 2026-11-04 [frist-spaeter]']);
+  assert.deepEqual(nextAssessments([late, over], now).map((a) => a.id), ['frist-spaeter']);
+});
+
+test('an assessment is named by its teacher and its id', () => {
+  assert.equal(assessmentKey(assessment('x', '2026-11-09')), 'anna/x');
 });

@@ -7,7 +7,7 @@
   import { courseHues, courseKey, home, keptOnShow, lessonKey, previousLesson, type Lesson } from './lib/lessons';
   import { refreshDue, type CheckIn } from './lib/checkin';
   import { courseHistory } from './lib/history';
-  import { assessmentsOn, nextAssessments, upcomingWeeks, type Assessment } from './lib/assessments';
+  import { assessmentKey, assessmentsOn, nextAssessments, upcoming as upcomingOf, type Assessment } from './lib/assessments';
   import type { ExitTicket } from './lib/exitTicket';
   import { exitNotice, exitNotices } from './lib/exitNotice';
   import { exitNoticeOn, keepSeenOpen, notify, seenOpen, setExitNoticeOn } from './lib/notifications';
@@ -61,7 +61,7 @@
     data && historyCourse ? courseHistory(data.lessons, historyCourse, data.checkIns, data.exitTickets, now) : [],
   );
   const upcomingCourse = $derived(opened?.kind === 'upcoming' ? courses.get(opened.course) : undefined);
-  const upcoming = $derived(data && upcomingCourse ? upcomingWeeks(data.lessons, data.assessments, upcomingCourse, now) : []);
+  const upcoming = $derived(data && upcomingCourse ? upcomingOf(data.lessons, data.assessments, upcomingCourse, now) : null);
   const assessmentShown = $derived.by(() => {
     const o = opened;
     return o?.kind === 'assessment' ? data?.assessments.find((a) => assessmentKey(a) === o.key) : undefined;
@@ -72,8 +72,6 @@
     new Map((data?.exitTickets ?? []).map((t) => [lessonKey({ teacherId: t.teacherId, id: t.lessonId }), t])),
   );
 
-  /** An assessment's ids are the teacher's own, so it is named by both. */
-  const assessmentKey = (a: Assessment) => `${a.teacherId}/${a.id}`;
   const openAssessment = (a: Assessment) => (opened = { kind: 'assessment', key: assessmentKey(a) });
 
   function checkedIn(c: CheckIn) {
@@ -158,7 +156,7 @@
     noticeOn = on;
   }
 
-  // The page takes the hue of the course on show, a lesson's or its Verlauf's.
+  // The page takes the hue of the course on show: a lesson's, its Verlauf's, its Demnächst's or an assessment's.
   $effect(() => {
     const onShow = shown ?? historyCourse ?? upcomingCourse ?? (assessmentShown && courses.get(courseKey(assessmentShown)));
     const hue = onShow ? hues.get(courseKey(onShow)) : undefined;
@@ -234,8 +232,8 @@
       </section>
     {:else if historyCourse}
       <History course={historyCourse} entries={history} assessments={data.assessments} onassessment={openAssessment} />
-    {:else if upcomingCourse}
-      <Upcoming course={upcomingCourse} weeks={upcoming} {now} onassessment={openAssessment} />
+    {:else if upcomingCourse && upcoming}
+      <Upcoming course={upcomingCourse} {upcoming} {now} onassessment={openAssessment} />
     {:else if assessmentShown}
       {@const course = courses.get(courseKey(assessmentShown))}
       <AssessmentView

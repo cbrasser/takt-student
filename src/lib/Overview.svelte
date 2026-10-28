@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { countdown, kindLabel, type Assessment } from './assessments';
+  import { assessmentKey, countdown, kindLabel, type Assessment } from './assessments';
   import { formatIsoDay, formatWhen } from './format';
   import { courseKey, coursesByName, lessonKey, type Course, type Home, type Lesson } from './lessons';
 
@@ -58,7 +58,7 @@
     <section class="stack group-of-cards" aria-labelledby="assessments-heading">
       <h2 class="leaf-title" id="assessments-heading">Prüfungen und Abgaben</h2>
       <ul class="cards">
-        {#each assessments as a (courseKey(a) + '/' + a.id)}
+        {#each assessments as a (assessmentKey(a))}
           <li data-hue={hues.get(courseKey(a))}>
             <button class="card-body" onclick={() => onassessment(a)}>
               <span class="caption">{kindLabel(a.kind)} · {courses.get(courseKey(a))?.name ?? a.courseId}</span>

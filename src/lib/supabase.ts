@@ -144,6 +144,37 @@ export async function reviewAnswered(lesson: Lesson): Promise<boolean | undefine
   return error ? undefined : data;
 }
 
+const ASSESSMENT_COLUMNS = 'teacher_id, id, course_id, date, kind, title, deadline, pages, goals, practice_url, free_text';
+
+/** One row of `takt_student.assessments`; a kind this app doesn't know reads as a Prüfung. */
+function assessmentOf(r: {
+  teacher_id: string;
+  id: string;
+  course_id: string;
+  date: string;
+  kind: string;
+  title: string;
+  deadline: string | null;
+  pages: unknown;
+  goals: string[];
+  practice_url: string;
+  free_text: string;
+}): Assessment {
+  return {
+    teacherId: r.teacher_id,
+    id: r.id,
+    courseId: r.course_id,
+    date: r.date,
+    kind: r.kind === 'hand-in' ? 'hand-in' : 'test',
+    title: r.title,
+    deadline: r.deadline ? new Date(r.deadline) : null,
+    pages: materialRefs(r.pages),
+    goals: r.goals,
+    practiceUrl: r.practice_url,
+    freeText: r.free_text,
+  };
+}
+
 export async function loadStudentData(): Promise<StudentData> {
   const [lessons, courses, checkIns, tickets, notes, assessments] = await Promise.all([
     supabase.from('lessons').select('*').order('starts_at'),
@@ -193,37 +224,6 @@ export async function loadStudentData(): Promise<StudentData> {
     checkIns: checkIns.data.map(checkInOf),
     exitTickets: tickets.data.map((t) => exitTicketOf(t, noteOf.get(lessonKey({ teacherId: t.teacher_id, id: t.lesson_id })))),
     assessments: assessments.data.map(assessmentOf),
-  };
-}
-
-const ASSESSMENT_COLUMNS = 'teacher_id, id, course_id, date, kind, title, deadline, pages, goals, practice_url, free_text';
-
-/** One row of `takt_student.assessments`; a kind this app doesn't know reads as a Prüfung. */
-export function assessmentOf(r: {
-  teacher_id: string;
-  id: string;
-  course_id: string;
-  date: string;
-  kind: string;
-  title: string;
-  deadline: string | null;
-  pages: unknown;
-  goals: string[];
-  practice_url: string;
-  free_text: string;
-}): Assessment {
-  return {
-    teacherId: r.teacher_id,
-    id: r.id,
-    courseId: r.course_id,
-    date: r.date,
-    kind: r.kind === 'hand-in' ? 'hand-in' : 'test',
-    title: r.title,
-    deadline: r.deadline ? new Date(r.deadline) : null,
-    pages: materialRefs(r.pages),
-    goals: r.goals,
-    practiceUrl: r.practice_url,
-    freeText: r.free_text,
   };
 }
 

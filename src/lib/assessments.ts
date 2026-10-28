@@ -29,6 +29,21 @@ export interface Assessment {
   freeText: string;
 }
 
+/** An assessment's ids are the teacher's own, so it is named by both. */
+export function assessmentKey(a: { teacherId: string; id: string }): string {
+  return `${a.teacherId}/${a.id}`;
+}
+
+/**
+ * The day an assessment is ahead on: its date, or today for an Abgabe dated
+ * earlier whose deadline is still ahead; null once it is behind.
+ */
+function aheadOn(a: Assessment, today: string, now: Date): string | null {
+  if (a.deadline !== null && a.deadline.getTime() <= now.getTime()) return null;
+  if (a.date >= today) return a.date;
+  return a.deadline !== null ? today : null;
+}
+
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
@@ -63,8 +78,14 @@ export interface UpcomingWeek {
   days: UpcomingDay[];
 }
 
+export interface Upcoming {
+  /** The last day it runs to: the current (else next) semester's end; null without one, when it runs on. */
+  end: string | null;
+  weeks: UpcomingWeek[];
+}
+
 /** The semester holding `today`, else the next one to start; none without a school year or after its last semester. */
-export function currentSemester(semesters: Semester[], today: string): Semester | null {
+function currentSemester(semesters: Semester[], today: string): Semester | null {
   return semesters.find((s) => s.start <= today && today <= s.end) ?? semesters.find((s) => today < s.start) ?? null;
 }
 
@@ -82,11 +103,12 @@ const byKindAndTitle = (a: Assessment, b: Assessment) =>
 
 /**
  * "Demnächst": the course's lessons that haven't ended and its assessments
- * from today on, up to the end of the current semester (all of them without
+ * still ahead, up to the end of the current semester (all of them without
  * one), by day and grouped by week from Monday. An assessment on a day
- * without a lesson has a day of its own.
+ * without a lesson has a day of its own; an Abgabe dated earlier whose
+ * deadline is still ahead shows under today.
  */
-export function upcomingWeeks(lessons: Lesson[], assessments: Assessment[], course: Course, now: Date): UpcomingWeek[] {
+export function upcoming(lessons: Lesson[], assessments: Assessment[], course: Course, now: Date): Upcoming {
   const key = courseKey(course);
   const today = isoDay(now);
   const end = currentSemester(course.semesters, today)?.end ?? null;
@@ -103,7 +125,8 @@ export function upcomingWeeks(lessons: Lesson[], assessments: Assessment[], cour
     if (courseKey(l) === key && l.endsAt.getTime() > now.getTime() && ahead(day)) dayOf(day).lessons.push(l);
   }
   for (const a of [...assessments].sort(byKindAndTitle)) {
-    if (courseKey(a) === key && ahead(a.date)) dayOf(a.date).assessments.push(a);
+    const day = aheadOn(a, today, now);
+    if (courseKey(a) === key && day !== null && ahead(day)) dayOf(day).assessments.push(a);
   }
 
   const weeks = new Map<string, UpcomingWeek>();
@@ -113,7 +136,7 @@ export function upcomingWeeks(lessons: Lesson[], assessments: Assessment[], cour
     if (!w) weeks.set(start, (w = { start, days: [] }));
     w.days.push(d);
   }
-  return [...weeks.values()];
+  return { end, weeks: [...weeks.values()] };
 }
 
 const KIND_LABEL: Record<AssessmentKind, string> = { test: 'Prüfung', 'hand-in': 'Abgabe' };
@@ -131,13 +154,13 @@ export function hasDetails(a: Assessment): boolean {
 const OVERVIEW_MAX = 5;
 
 /**
- * The overview's next assessments across all courses: from today on, soonest
- * first, at most five. An Abgabe whose deadline has passed is no longer ahead.
+ * The overview's next assessments across all courses: those still ahead,
+ * soonest first, at most five. An Abgabe is ahead until its deadline.
  */
 export function nextAssessments(assessments: Assessment[], now: Date): Assessment[] {
   const today = isoDay(now);
   return assessments
-    .filter((a) => a.date >= today && (a.deadline === null || a.deadline.getTime() > now.getTime()))
+    .filter((a) => aheadOn(a, today, now) !== null)
     .sort((a, b) => a.date.localeCompare(b.date) || byKindAndTitle(a, b))
     .slice(0, OVERVIEW_MAX);
 }

@@ -219,7 +219,7 @@ a {
   letter-spacing: 0.01em;
 }
 
-/* A Prüfung or an Abgabe on a lesson or a day: a small chip, a Prüfung filled with ink. */
+/* A Prüfung or an Abgabe on a lesson or a day: a small pill, a Prüfung filled with ink. */
 .badge {
   display: inline-flex;
   align-items: center;
