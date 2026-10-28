@@ -1,10 +1,10 @@
 <script lang="ts">
   import { formatWhen } from './format';
-  import { attendanceLabel, exportName, historyMarkdown, ticketLabel, type HistoryEntry } from './history';
-  import { handedInLabel } from './exitTicket';
+  import { attendanceLabel, exportName, historyMarkdown, ticketMark, type HistoryEntry } from './history';
   import { lessonKey, type Course } from './lessons';
   import Materials from './Materials.svelte';
   import { saveText } from './save';
+  import TicketAnswers from './TicketAnswers.svelte';
 
   let { course, entries }: { course: Course; entries: HistoryEntry[] } = $props();
 
@@ -40,18 +40,14 @@
   {:else}
     <ol class="lessons">
       {#each entries as e, i (lessonKey(e.lesson))}
-        {@const flag = e.handedIn ? null : ticketLabel(e.ticket, e.lesson)}
+        {@const mark = ticketMark(e)}
         <li>
           <article class="leaf lesson" class:missed={e.attendance === 'missed'} aria-labelledby="history-lesson-{i}">
             <p class="caption muted">{formatWhen(e.lesson.startsAt, e.lesson.endsAt)}</p>
             <h2 class="topic" id="history-lesson-{i}">{e.lesson.topic || 'Noch kein Thema'}</h2>
             <p class="marks">
               <span class="mark" class:mark-missed={e.attendance === 'missed'}>{attendanceLabel(e.attendance)}</span>
-              {#if e.handedIn?.submittedAt}
-                <span class="mark">{handedInLabel(e.handedIn.submittedAt)}</span>
-              {:else if flag}
-                <span class="mark" class:mark-missing={e.ticket === 'missing'}>{flag}</span>
-              {/if}
+              {#if mark}<span class="mark" class:mark-missing={mark.missing}>{mark.label}</span>{/if}
             </p>
 
             {#if e.lesson.homework}
@@ -64,16 +60,7 @@
             {/if}
             {#if e.handedIn}
               <h3 class="group">Dein Exit-Ticket</h3>
-              <dl class="answers">
-                <dt>Was haben wir gemacht? · nur für dich</dt>
-                <dd>{e.handedIn.note || '–'}</dd>
-                <dt>Was war unklar?</dt>
-                <dd>{e.handedIn.unclear}</dd>
-                {#each Object.entries(e.handedIn.ratings) as [goal, n] (goal)}
-                  <dt>{goal}</dt>
-                  <dd>{n} von 4</dd>
-                {/each}
-              </dl>
+              <TicketAnswers ticket={e.handedIn} />
             {/if}
           </article>
         </li>
@@ -149,32 +136,5 @@
 
   .text {
     white-space: pre-line;
-  }
-
-  .group {
-    font-family: var(--font-ui);
-    font-size: var(--t-sm);
-    letter-spacing: 0;
-    border-bottom: var(--line);
-    padding-bottom: var(--s-1);
-    margin: var(--s-4) 0 var(--s-2);
-  }
-
-  .answers {
-    display: grid;
-    gap: var(--s-1);
-  }
-
-  .answers dt {
-    font-size: var(--t-xs);
-    font-weight: 700;
-    color: var(--ink-2);
-    margin-top: var(--s-2);
-  }
-
-  .answers dd {
-    margin: 0;
-    white-space: pre-line;
-    font-weight: 600;
   }
 </style>

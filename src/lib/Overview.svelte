@@ -1,6 +1,6 @@
 <script lang="ts">
   import { formatWhen } from './format';
-  import { courseKey, lessonKey, type Course, type Home, type Lesson } from './lessons';
+  import { courseKey, coursesByName, lessonKey, type Course, type Home, type Lesson } from './lessons';
 
   let {
     home,
@@ -16,7 +16,7 @@
     onhistory: (course: Course) => void;
   } = $props();
 
-  const byName = $derived([...courses.values()].sort((a, b) => a.name.localeCompare(b.name, 'de-CH')));
+  const byName = $derived(coursesByName([...courses.values()]));
 </script>
 
 {#snippet content(lesson: Lesson, label: string)}

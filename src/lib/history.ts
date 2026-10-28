@@ -35,20 +35,6 @@ export function attendanceLabel(a: Attendance): string {
  */
 export type HistoryTicket = TicketStatus | 'open';
 
-/** "Exit-Ticket fehlt", "… entschuldigt", "… offen bis 09:15"; null when the ticket itself (or nothing) says it. */
-export function ticketLabel(t: HistoryTicket, lesson: Lesson): string | null {
-  switch (t) {
-    case 'missing':
-      return 'Exit-Ticket fehlt';
-    case 'excused':
-      return 'Exit-Ticket entschuldigt';
-    case 'open':
-      return `Exit-Ticket offen bis ${formatTime(exitClosesAt(lesson))}`;
-    default:
-      return null;
-  }
-}
-
 export interface HistoryEntry {
   lesson: Lesson;
   attendance: Attendance;
@@ -72,22 +58,41 @@ export function courseHistory(lessons: Lesson[], course: Course, checkIns: Check
     .sort((a, b) => b.startsAt.getTime() - a.startsAt.getTime())
     .map((lesson): HistoryEntry => {
       const checkIn = checkInOf.get(lessonKey(lesson));
-      const t = ticketOf.get(lessonKey(lesson));
-      const status = ticketStatus(checkIn?.status ?? 'missing', t && ticketKind(t.submittedAt !== null, t.excused));
+      const exitTicket = ticketOf.get(lessonKey(lesson));
+      const status = ticketStatus(checkIn?.status ?? 'missing', exitTicket && ticketKind(exitTicket.submittedAt !== null, exitTicket.excused));
       const closed = exitClosesAt(lesson).getTime() <= now.getTime();
       return {
         lesson,
         attendance: attendanceOf(checkIn),
         ticket: status === 'missing' && !closed ? 'open' : status,
-        handedIn: t?.submittedAt ? t : null,
+        handedIn: exitTicket?.submittedAt ? exitTicket : null,
       };
     });
 }
 
+/**
+ * What the Verlauf says about a lesson's ticket: "Abgegeben 08:52" wherever
+ * she handed one in, else "Exit-Ticket fehlt" (`missing`, which goes into the
+ * oral grade), "… entschuldigt" or "… offen bis 09:15"; null when none was
+ * owed and none handed in.
+ */
+export function ticketMark(e: HistoryEntry): { label: string; missing: boolean } | null {
+  if (e.handedIn?.submittedAt) return { label: handedInLabel(e.handedIn.submittedAt), missing: false };
+  switch (e.ticket) {
+    case 'missing':
+      return { label: 'Exit-Ticket fehlt', missing: true };
+    case 'excused':
+      return { label: 'Exit-Ticket entschuldigt', missing: false };
+    case 'open':
+      return { label: `Exit-Ticket offen bis ${formatTime(exitClosesAt(e.lesson))}`, missing: false };
+    default:
+      return null;
+  }
+}
+
 /** "08:15–09:00 · pünktlich · Abgegeben 08:52": when, her status and her ticket's. */
-export function entryLine(e: HistoryEntry): string {
-  const ticket = e.handedIn?.submittedAt ? handedInLabel(e.handedIn.submittedAt) : ticketLabel(e.ticket, e.lesson);
-  return [formatTimes(e.lesson.startsAt, e.lesson.endsAt), attendanceLabel(e.attendance), ticket].filter(Boolean).join(' · ');
+function entryLine(e: HistoryEntry): string {
+  return [formatTimes(e.lesson.startsAt, e.lesson.endsAt), attendanceLabel(e.attendance), ticketMark(e)?.label].filter(Boolean).join(' · ');
 }
 
 /** Free text as a quote, line by line, so nothing the student wrote turns into a heading of the export. */
@@ -106,19 +111,20 @@ function section(title: string, body: string): string {
 /**
  * The student's own Verlauf of a course as Markdown, oldest lesson first, to
  * keep after the course is archived: per lesson its day, topic, her status,
- * both parts of her exit ticket, her goal ratings and the homework.
+ * both parts of her exit ticket, her goal ratings and the homework. It speaks
+ * to the student, as the app does.
  */
 export function historyMarkdown(course: Course, entries: HistoryEntry[]): string {
-  const head = `# ${course.name}\n\nMein Verlauf aus Takt: meine Lektionen, mein Status, meine Notizen und Exit-Tickets.\n`;
+  const head = `# ${course.name}\n\nDein Verlauf aus Takt: deine Lektionen, dein Status, deine Notizen und Exit-Tickets.\n`;
   if (entries.length === 0) return `${head}\nNoch keine vergangenen Lektionen.\n`;
   const lessons = [...entries].reverse().map((e) => {
-    const { lesson: l, handedIn: t } = e;
+    const { lesson: l, handedIn: ticket } = e;
     const topic = l.topic.replace(/\s+/g, ' ').trim() || 'Noch kein Thema';
     const parts = [`## ${formatDate(l.startsAt)} · ${topic}\n`, `${entryLine(e)}\n`];
-    if (t?.note.trim()) parts.push(section('Was haben wir gemacht?', quote(t.note)));
-    if (t) parts.push(section('Was war unklar?', quote(t.unclear)));
-    const ratings = Object.entries(t?.ratings ?? {});
-    if (ratings.length > 0) parts.push(section('Wie sicher ich bei den Zielen war', ratings.map(([g, n]) => `- ${g} – ${n} von 4`).join('\n')));
+    if (ticket?.note.trim()) parts.push(section('Was haben wir gemacht?', quote(ticket.note)));
+    if (ticket) parts.push(section('Was war unklar?', quote(ticket.unclear)));
+    const ratings = Object.entries(ticket?.ratings ?? {});
+    if (ratings.length > 0) parts.push(section('Wie sicher du bei den Zielen warst', ratings.map(([g, n]) => `- ${g} – ${n} von 4`).join('\n')));
     if (l.homework.trim()) parts.push(section('Hausaufgaben', quote(l.homework)));
     return parts.join('\n');
   });

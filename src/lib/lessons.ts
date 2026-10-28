@@ -155,8 +155,12 @@ export function materialUrl(path: string, siteUrl: string | null): string | null
 /** How many course hues the design has (bestanden's year hues). */
 export const HUES = 4;
 
+/** The courses in order of their names, as the overview lists them and the hues go. */
+export function coursesByName(courses: Course[]): Course[] {
+  return [...courses].sort((a, b) => a.name.localeCompare(b.name, 'de-CH') || courseKey(a).localeCompare(courseKey(b)));
+}
+
 /** Each course's hue (0 to HUES - 1), given in order of the course names. */
 export function courseHues(courses: Course[]): Map<string, number> {
-  const sorted = [...courses].sort((a, b) => a.name.localeCompare(b.name, 'de-CH') || courseKey(a).localeCompare(courseKey(b)));
-  return new Map(sorted.map((c, i) => [courseKey(c), i % HUES]));
+  return new Map(coursesByName(courses).map((c, i) => [courseKey(c), i % HUES]));
 }

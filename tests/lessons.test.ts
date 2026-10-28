@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { courseHues, home, keptOnShow, materialUrl, previousLesson, type Course, type Lesson } from '../src/lib/lessons.ts';
+import { courseHues, coursesByName, home, keptOnShow, materialUrl, previousLesson, type Course, type Lesson } from '../src/lib/lessons.ts';
 
 const MIN = 60_000;
 
@@ -138,6 +138,12 @@ test('courses take the hues in order of their name, and wrap after four', () => 
     ['a', 'b', 'c', 'd', 'e'].map((id) => hues.get(`anna/${id}`)),
     [0, 1, 2, 3, 0],
   );
+});
+
+test('the courses in order of their name, the same teacher\'s order for equal names', () => {
+  const course = (teacherId: string, id: string, name: string): Course => ({ teacherId, id, name, teacherName: null, siteUrl: null });
+  const sorted = coursesByName([course('ben', 'x', 'Übungen'), course('anna', 'b', 'Mathe'), course('anna', 'a', 'Mathe'), course('anna', 'c', 'Biologie')]);
+  assert.deepEqual(sorted.map((c) => `${c.teacherId}/${c.id}`), ['anna/c', 'anna/a', 'anna/b', 'ben/x']);
 });
 
 test('a lesson whose ticket has closed stays on show for a student following home', () => {

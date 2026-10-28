@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { attendanceLabel, courseHistory, exportName, historyMarkdown, ticketLabel } from '../src/lib/history.ts';
+import { attendanceLabel, courseHistory, exportName, historyMarkdown, ticketMark } from '../src/lib/history.ts';
 import type { CheckIn } from '../src/lib/checkin.ts';
 import type { ExitTicket } from '../src/lib/exitTicket.ts';
 import type { Course, Lesson } from '../src/lib/lessons.ts';
@@ -165,12 +165,17 @@ test('her own ticket shows wherever she handed one in, owed or not; an excuse al
 
 test('what the Verlauf says about the ticket', () => {
   const l = lesson(2);
-  assert.equal(ticketLabel('missing', l), 'Exit-Ticket fehlt');
-  assert.equal(ticketLabel('excused', l), 'Exit-Ticket entschuldigt');
-  assert.equal(ticketLabel('open', l), 'Exit-Ticket offen bis 09:15');
-  // Handed in, the ticket itself shows; not required, nothing is said.
-  assert.equal(ticketLabel('handed_in', l), null);
-  assert.equal(ticketLabel('not_required', l), null);
+  const on = (checkInStatus: CheckIn['status'], tickets: ExitTicket[], now: string) =>
+    ticketMark(courseHistory([l], course, [checkIn(l, checkInStatus)], tickets, new Date(now))[0]);
+  const after = '2026-11-30T12:00:00+01:00';
+  assert.deepEqual(on('on_time', [], after), { label: 'Exit-Ticket fehlt', missing: true });
+  assert.deepEqual(on('on_time', [ticket(l, { unclear: '', submittedAt: null, excused: true })], after), { label: 'Exit-Ticket entschuldigt', missing: false });
+  assert.deepEqual(on('on_time', [], '2026-11-02T09:05:00+01:00'), { label: 'Exit-Ticket offen bis 09:15', missing: false });
+  assert.deepEqual(on('late', [ticket(l)], after), { label: 'Abgegeben 08:55', missing: false });
+  // Handed in while absent: still her ticket.
+  assert.deepEqual(on('missing', [ticket(l)], after), { label: 'Abgegeben 08:55', missing: false });
+  // Not required and nothing handed in: nothing is said.
+  assert.equal(on('excused', [], after), null);
 });
 
 test('the Markdown export: her lessons oldest first, with her status, her notes and her tickets', () => {
@@ -197,7 +202,7 @@ test('the Markdown export: her lessons oldest first, with her status, her notes 
     [
       '# 3a · Informatik',
       '',
-      'Mein Verlauf aus Takt: meine Lektionen, mein Status, meine Notizen und Exit-Tickets.',
+      'Dein Verlauf aus Takt: deine Lektionen, dein Status, deine Notizen und Exit-Tickets.',
       '',
       '## Montag, 2. November 2026 · XOR',
       '',
@@ -212,7 +217,7 @@ test('the Markdown export: her lessons oldest first, with her status, her notes 
       '',
       '> Warum ist der Schlüssel so lang?',
       '',
-      '### Wie sicher ich bei den Zielen war',
+      '### Wie sicher du bei den Zielen warst',
       '',
       '- Ich kann XOR anwenden. – 3 von 4',
       '',
@@ -236,7 +241,7 @@ test('the Markdown export: her lessons oldest first, with her status, her notes 
 test('the export of a course without past lessons says so', () => {
   assert.equal(
     historyMarkdown(course, []),
-    '# 3a · Informatik\n\nMein Verlauf aus Takt: meine Lektionen, mein Status, meine Notizen und Exit-Tickets.\n\nNoch keine vergangenen Lektionen.\n',
+    '# 3a · Informatik\n\nDein Verlauf aus Takt: deine Lektionen, dein Status, deine Notizen und Exit-Tickets.\n\nNoch keine vergangenen Lektionen.\n',
   );
 });
 

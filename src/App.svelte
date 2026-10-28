@@ -114,8 +114,8 @@
 
   // The page takes the hue of the course on show, a lesson's or its Verlauf's.
   $effect(() => {
-    const on = shown ?? historyCourse;
-    const hue = on ? hues.get(courseKey(on)) : undefined;
+    const onShow = shown ?? historyCourse;
+    const hue = onShow ? hues.get(courseKey(onShow)) : undefined;
     if (hue === undefined) delete document.documentElement.dataset.hue;
     else document.documentElement.dataset.hue = String(hue);
   });
