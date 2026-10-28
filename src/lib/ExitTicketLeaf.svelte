@@ -12,6 +12,7 @@
   } from './exitTicket';
   import type { Lesson } from './lessons';
   import { handIn } from './supabase';
+  import TicketAnswers from './TicketAnswers.svelte';
 
   let {
     lesson,
@@ -131,16 +132,7 @@
   {:else}
     <p class="note" role="status">{closedLabel(exit.closedAt, exit.handedInAt)}</p>
     {#if exit.handedInAt && ticket}
-      <dl class="answers">
-        <dt>Was haben wir gemacht?</dt>
-        <dd>{ticket.note || '–'}</dd>
-        <dt>Was war unklar?</dt>
-        <dd>{ticket.unclear}</dd>
-        {#each Object.entries(ticket.ratings) as [goal, n] (goal)}
-          <dt>{goal}</dt>
-          <dd>{n} von 4</dd>
-        {/each}
-      </dl>
+      <div class="answers"><TicketAnswers {ticket} /></div>
     {/if}
   {/if}
 </section>
@@ -227,21 +219,6 @@
   }
 
   .answers {
-    display: grid;
-    gap: var(--s-1);
     margin-top: var(--s-4);
-  }
-
-  .answers dt {
-    font-size: var(--t-xs);
-    font-weight: 700;
-    color: var(--ink-2);
-    margin-top: var(--s-2);
-  }
-
-  .answers dd {
-    margin: 0;
-    white-space: pre-line;
-    font-weight: 600;
   }
 </style>

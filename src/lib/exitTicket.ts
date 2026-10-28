@@ -22,6 +22,8 @@ export interface ExitTicket {
   ratings: Record<string, number>;
   /** The server's time of the first "Abgeben"; null when nothing is handed in. */
   submittedAt: Date | null;
+  /** The teacher excused it while it was missing. */
+  excused: boolean;
 }
 
 export type ExitTicketState =

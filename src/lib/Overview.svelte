@@ -1,18 +1,22 @@
 <script lang="ts">
   import { formatWhen } from './format';
-  import { courseKey, lessonKey, type Course, type Home, type Lesson } from './lessons';
+  import { courseKey, coursesByName, lessonKey, type Course, type Home, type Lesson } from './lessons';
 
   let {
     home,
     courses,
     hues,
     onopen,
+    onhistory,
   }: {
     home: Home;
     courses: Map<string, Course>;
     hues: Map<string, number>;
     onopen: (lesson: Lesson) => void;
+    onhistory: (course: Course) => void;
   } = $props();
+
+  const byName = $derived(coursesByName([...courses.values()]));
 </script>
 
 {#snippet content(lesson: Lesson, label: string)}
@@ -39,9 +43,31 @@
     {#each home.next as lesson (lessonKey(lesson))}{@render card(lesson, 'Nächste Lektion', false)}{/each}
     {#if home.last}{@render card(home.last, 'Letzte Lektion', true)}{/if}
   </ul>
+
+  {#if byName.length > 0}
+    <section class="stack history" aria-labelledby="history-heading">
+      <h2 class="leaf-title" id="history-heading">Verlauf</h2>
+      <ul class="cards">
+        {#each byName as course (courseKey(course))}
+          <li data-hue={hues.get(courseKey(course))}>
+            <button class="card-body" onclick={() => onhistory(course)}>
+              <span class="caption">Verlauf</span>
+              <span class="topic">{course.name}</span>
+              <span class="when">Vergangene Lektionen, dein Status und deine Exit-Tickets</span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 </section>
 
 <style>
+  .history {
+    margin-top: var(--s-4);
+    gap: 0;
+  }
+
   .cards {
     list-style: none;
     padding: 0;

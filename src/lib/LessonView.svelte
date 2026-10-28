@@ -124,13 +124,4 @@
     font-size: var(--t-lg);
     margin-top: var(--s-1);
   }
-
-  .group {
-    font-family: var(--font-ui);
-    font-size: var(--t-sm);
-    letter-spacing: 0;
-    border-bottom: var(--line);
-    padding-bottom: var(--s-1);
-    margin: var(--s-4) 0 var(--s-2);
-  }
 </style>

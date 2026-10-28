@@ -40,6 +40,7 @@ function ticket(extra: Partial<ExitTicket> = {}): ExitTicket {
     unclear: 'Warum ist der Schlüssel so lang?',
     ratings: { 'Ich kann XOR anwenden.': 3 },
     submittedAt: new Date('2026-11-02T08:52:00+01:00'),
+    excused: false,
     ...extra,
   };
 }
