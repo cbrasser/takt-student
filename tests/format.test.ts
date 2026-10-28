@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatDay, formatTimes, formatWhen, isoDay } from '../src/lib/format.ts';
+import { formatDate, formatDay, formatIsoDay, formatTimes, formatWeek, formatWhen, isoDay } from '../src/lib/format.ts';
 
 // 07:15 UTC is 08:15 in Zurich in winter, whatever the laptop's own zone.
 const start = new Date('2026-11-02T07:15:00Z');
@@ -29,4 +29,9 @@ test('a date to read again later carries its year', () => {
 test('the ISO day is Zurich\'s, as the database\'s dates are', () => {
   assert.equal(isoDay(start), '2026-11-02');
   assert.equal(isoDay(new Date('2026-11-02T23:30:00Z')), '2026-11-03');
+});
+
+test('a day given as "2026-11-09" is named as that day, wherever the laptop is', () => {
+  assert.equal(formatIsoDay('2026-11-09'), 'Montag, 9. November');
+  assert.equal(formatWeek('2026-11-09'), 'Woche vom 9. November');
 });

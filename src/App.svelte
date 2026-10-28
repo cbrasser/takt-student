@@ -7,6 +7,7 @@
   import { courseHues, courseKey, home, keptOnShow, lessonKey, previousLesson, type Lesson } from './lib/lessons';
   import { refreshDue, type CheckIn } from './lib/checkin';
   import { courseHistory } from './lib/history';
+  import { assessmentsOn, nextAssessments, upcomingWeeks, type Assessment } from './lib/assessments';
   import type { ExitTicket } from './lib/exitTicket';
   import { exitNotice, exitNotices } from './lib/exitNotice';
   import { exitNoticeOn, keepSeenOpen, notify, seenOpen, setExitNoticeOn } from './lib/notifications';
@@ -15,6 +16,8 @@
   import LessonView from './lib/LessonView.svelte';
   import Overview from './lib/Overview.svelte';
   import History from './lib/History.svelte';
+  import Upcoming from './lib/Upcoming.svelte';
+  import AssessmentView from './lib/AssessmentView.svelte';
   import Settings from './lib/Settings.svelte';
 
   const CLOCK_MS = 30_000;
@@ -30,7 +33,13 @@
   let loading = false;
   /** What the student opened by hand; null follows home (the current lesson, else the overview). */
   let opened = $state<
-    { kind: 'overview' } | { kind: 'settings' } | { kind: 'lesson'; key: string } | { kind: 'history'; course: string } | null
+    | { kind: 'overview' }
+    | { kind: 'settings' }
+    | { kind: 'lesson'; key: string }
+    | { kind: 'history'; course: string }
+    | { kind: 'upcoming'; course: string }
+    | { kind: 'assessment'; key: string }
+    | null
   >(null);
   let noticeOn = $state(exitNoticeOn());
 
@@ -40,7 +49,7 @@
   const courses = $derived(new Map((data?.courses ?? []).map((c) => [courseKey(c), c])));
   const hues = $derived(courseHues(data?.courses ?? []));
   const shown = $derived.by((): Lesson | null => {
-    if (!data || opened?.kind === 'overview' || opened?.kind === 'settings' || opened?.kind === 'history') return null;
+    if (!data || (opened !== null && opened.kind !== 'lesson')) return null;
     if (opened?.kind === 'lesson') {
       const key = opened.key;
       return data.lessons.find((l) => lessonKey(l) === key) ?? null;
@@ -51,11 +60,21 @@
   const history = $derived(
     data && historyCourse ? courseHistory(data.lessons, historyCourse, data.checkIns, data.exitTickets, now) : [],
   );
+  const upcomingCourse = $derived(opened?.kind === 'upcoming' ? courses.get(opened.course) : undefined);
+  const upcoming = $derived(data && upcomingCourse ? upcomingWeeks(data.lessons, data.assessments, upcomingCourse, now) : []);
+  const assessmentShown = $derived.by(() => {
+    const o = opened;
+    return o?.kind === 'assessment' ? data?.assessments.find((a) => assessmentKey(a) === o.key) : undefined;
+  });
   const currentKey = $derived(lessonsNow?.current ? lessonKey(lessonsNow.current) : null);
   const checkIns = $derived(new Map((data?.checkIns ?? []).map((c) => [lessonKey({ teacherId: c.teacherId, id: c.lessonId }), c])));
   const exitTickets = $derived(
     new Map((data?.exitTickets ?? []).map((t) => [lessonKey({ teacherId: t.teacherId, id: t.lessonId }), t])),
   );
+
+  /** An assessment's ids are the teacher's own, so it is named by both. */
+  const assessmentKey = (a: Assessment) => `${a.teacherId}/${a.id}`;
+  const openAssessment = (a: Assessment) => (opened = { kind: 'assessment', key: assessmentKey(a) });
 
   function checkedIn(c: CheckIn) {
     if (!data) return;
@@ -141,7 +160,7 @@
 
   // The page takes the hue of the course on show, a lesson's or its Verlauf's.
   $effect(() => {
-    const onShow = shown ?? historyCourse;
+    const onShow = shown ?? historyCourse ?? upcomingCourse ?? (assessmentShown && courses.get(courseKey(assessmentShown)));
     const hue = onShow ? hues.get(courseKey(onShow)) : undefined;
     if (hue === undefined) delete document.documentElement.dataset.hue;
     else document.documentElement.dataset.hue = String(hue);
@@ -187,7 +206,7 @@
         {#if opened?.kind === 'settings'}
           <button class="btn" onclick={() => (opened = null)}>Zurück</button>
         {:else}
-          {#if shown || historyCourse}
+          {#if shown || historyCourse || upcomingCourse || assessmentShown}
             <button class="btn" onclick={() => (opened = { kind: 'overview' })}>Übersicht</button>
           {/if}
           {#if desktop}
@@ -214,7 +233,17 @@
         <p class="lede">Sobald deine Lehrperson Lektionen für deine Kurse plant, erscheinen sie hier.</p>
       </section>
     {:else if historyCourse}
-      <History course={historyCourse} entries={history} />
+      <History course={historyCourse} entries={history} assessments={data.assessments} onassessment={openAssessment} />
+    {:else if upcomingCourse}
+      <Upcoming course={upcomingCourse} weeks={upcoming} {now} onassessment={openAssessment} />
+    {:else if assessmentShown}
+      {@const course = courses.get(courseKey(assessmentShown))}
+      <AssessmentView
+        assessment={assessmentShown}
+        {course}
+        {now}
+        onupcoming={() => (opened = { kind: 'upcoming', course: courseKey(assessmentShown) })}
+      />
     {:else if shown}
       {#key lessonKey(shown)}
         <LessonView
@@ -223,6 +252,8 @@
           previous={previousLesson(data.lessons, shown)}
           checkIn={checkIns.get(lessonKey(shown))}
           exitTicket={exitTickets.get(lessonKey(shown))}
+          assessments={assessmentsOn(shown, data.assessments)}
+          onassessment={openAssessment}
           {now}
           oncheckin={checkedIn}
           onhandin={handedIn}
@@ -233,8 +264,12 @@
         home={lessonsNow}
         {courses}
         {hues}
+        assessments={nextAssessments(data.assessments, now)}
+        {now}
         onopen={(l) => (opened = { kind: 'lesson', key: lessonKey(l) })}
+        onupcoming={(c) => (opened = { kind: 'upcoming', course: courseKey(c) })}
         onhistory={(c) => (opened = { kind: 'history', course: courseKey(c) })}
+        onassessment={openAssessment}
       />
     {/if}
   </div>

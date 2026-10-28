@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AssessmentBadges from './AssessmentBadges.svelte';
+  import { assessmentsOn, type Assessment } from './assessments';
   import { formatWhen } from './format';
   import { attendanceLabel, exportName, historyMarkdown, ticketMark, type HistoryEntry } from './history';
   import { lessonKey, type Course } from './lessons';
@@ -6,7 +8,12 @@
   import { saveText } from './save';
   import TicketAnswers from './TicketAnswers.svelte';
 
-  let { course, entries }: { course: Course; entries: HistoryEntry[] } = $props();
+  let {
+    course,
+    entries,
+    assessments,
+    onassessment,
+  }: { course: Course; entries: HistoryEntry[]; assessments: Assessment[]; onassessment: (a: Assessment) => void } = $props();
 
   let saving = $state(false);
   let problem = $state<string | null>(null);
@@ -45,6 +52,7 @@
           <article class="leaf lesson" class:missed={e.attendance === 'missed'} aria-labelledby="history-lesson-{i}">
             <p class="caption muted">{formatWhen(e.lesson.startsAt, e.lesson.endsAt)}</p>
             <h2 class="topic" id="history-lesson-{i}">{e.lesson.topic || 'Noch kein Thema'}</h2>
+            <AssessmentBadges assessments={assessmentsOn(e.lesson, assessments)} onopen={onassessment} />
             {#if e.attendance || mark}
               <p class="marks">
                 {#if e.attendance}

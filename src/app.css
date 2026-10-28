@@ -219,6 +219,33 @@ a {
   letter-spacing: 0.01em;
 }
 
+/* A Prüfung or an Abgabe on a lesson or a day: a small chip, a Prüfung filled with ink. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--s-5);
+  padding: 0 var(--s-2);
+  border: var(--line);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.badge-test {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+button.badge {
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  cursor: pointer;
+}
+
 /* --------------------------------------------------------------- buttons */
 
 .btn {

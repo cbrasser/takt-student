@@ -43,6 +43,14 @@ export interface Course {
    * existed, have no attendance status. Null while the course has none.
    */
   checkInStart: string | null;
+  /** The teacher's school years' semesters, in order ("Demnächst" runs to the current one's end); none without a school year. */
+  semesters: Semester[];
+}
+
+/** A semester, both ends inclusive, as days on the Swiss clock: "2026-08-17". */
+export interface Semester {
+  start: string;
+  end: string;
 }
 
 export interface Home {

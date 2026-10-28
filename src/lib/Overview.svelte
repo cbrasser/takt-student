@@ -1,19 +1,29 @@
 <script lang="ts">
-  import { formatWhen } from './format';
+  import { countdown, kindLabel, type Assessment } from './assessments';
+  import { formatIsoDay, formatWhen } from './format';
   import { courseKey, coursesByName, lessonKey, type Course, type Home, type Lesson } from './lessons';
 
   let {
     home,
     courses,
     hues,
+    assessments,
+    now,
     onopen,
+    onupcoming,
     onhistory,
+    onassessment,
   }: {
     home: Home;
     courses: Map<string, Course>;
     hues: Map<string, number>;
+    /** The next ones across all courses (`nextAssessments`). */
+    assessments: Assessment[];
+    now: Date;
     onopen: (lesson: Lesson) => void;
+    onupcoming: (course: Course) => void;
     onhistory: (course: Course) => void;
+    onassessment: (a: Assessment) => void;
   } = $props();
 
   const byName = $derived(coursesByName([...courses.values()]));
@@ -44,17 +54,36 @@
     {#if home.last}{@render card(home.last, 'Letzte Lektion', true)}{/if}
   </ul>
 
+  {#if assessments.length > 0}
+    <section class="stack group-of-cards" aria-labelledby="assessments-heading">
+      <h2 class="leaf-title" id="assessments-heading">Prüfungen und Abgaben</h2>
+      <ul class="cards">
+        {#each assessments as a (courseKey(a) + '/' + a.id)}
+          <li data-hue={hues.get(courseKey(a))}>
+            <button class="card-body" onclick={() => onassessment(a)}>
+              <span class="caption">{kindLabel(a.kind)} · {courses.get(courseKey(a))?.name ?? a.courseId}</span>
+              <span class="topic">{a.title || kindLabel(a.kind)}</span>
+              <span class="when">{[formatIsoDay(a.date), a.deadline && countdown(a.deadline, now)].filter(Boolean).join(' · ')}</span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
   {#if byName.length > 0}
-    <section class="stack history" aria-labelledby="history-heading">
-      <h2 class="leaf-title" id="history-heading">Verlauf</h2>
+    <section class="stack group-of-cards" aria-labelledby="courses-heading">
+      <h2 class="leaf-title" id="courses-heading">Deine Kurse</h2>
       <ul class="cards">
         {#each byName as course (courseKey(course))}
           <li data-hue={hues.get(courseKey(course))}>
-            <button class="card-body" onclick={() => onhistory(course)}>
-              <span class="caption">Verlauf</span>
+            <div class="card-body">
               <span class="topic">{course.name}</span>
-              <span class="when">Vergangene Lektionen, dein Status und deine Exit-Tickets</span>
-            </button>
+              <span class="course-actions">
+                <button class="btn" aria-label="Demnächst · {course.name}" onclick={() => onupcoming(course)}>Demnächst</button>
+                <button class="btn" aria-label="Verlauf · {course.name}" onclick={() => onhistory(course)}>Verlauf</button>
+              </span>
+            </div>
           </li>
         {/each}
       </ul>
@@ -63,9 +92,16 @@
 </section>
 
 <style>
-  .history {
+  .group-of-cards {
     margin-top: var(--s-4);
     gap: 0;
+  }
+
+  .course-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-top: var(--s-2);
   }
 
   .cards {
