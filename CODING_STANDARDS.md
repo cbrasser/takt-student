@@ -16,7 +16,7 @@ Which lesson is current, next or last, and what a material path links to, are de
 
 ## Data goes through `src/lib/supabase.ts`
 
-Views get plain `Lesson` and `Course` values; only `src/lib/supabase.ts` talks to Supabase. The app reads `takt_student` only, never `takt`, and writes only through `takt_student.check_in()` and `takt_student.submit_exit_ticket()`, which stamp the server's time: row-level security is the guard, and the app never relies on its own filtering to hide another class.
+Views get plain `Lesson` and `Course` values; only `src/lib/supabase.ts` talks to Supabase. The app reads `takt_student` only, never `takt`, and writes only through `takt_student.check_in()` and `takt_student.submit_exit_ticket()`, which stamp the server's time, and `takt_student.submit_review()`, which stamps none and returns nothing, so the anonymous answer never comes back: row-level security is the guard, and the app never relies on its own filtering to hide another class.
 
 ## Only the release build talks to production
 

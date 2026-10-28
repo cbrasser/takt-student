@@ -20,14 +20,12 @@
     teacherName,
     ticket,
     exit,
-    now,
     onhandin,
   }: {
     lesson: Lesson;
     teacherName: string | null;
     ticket: ExitTicket | undefined;
     exit: Exclude<ExitTicketState, { kind: 'not-open' }>;
-    now: Date;
     onhandin: (t: ExitTicket) => void;
   } = $props();
 
@@ -139,7 +137,7 @@
     {/if}
   {/if}
 
-  <ReviewPart {lesson} {now} />
+  <ReviewPart {lesson} {exit} />
 </section>
 
 <style>

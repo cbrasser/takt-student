@@ -123,7 +123,7 @@ export async function handIn(lesson: Lesson, s: Submission): Promise<{ ticket: E
  * `takt_student.submit_review()` raised (`review_answered`, ...), or undefined
  * when the request didn't get through.
  */
-export async function answerReview(lesson: Lesson, s: ReviewSubmission): Promise<{ refused: string | undefined } | null> {
+export async function answerReview(lesson: Lesson, s: ReviewSubmission): Promise<{ answered: true } | { refused: string | undefined }> {
   const { error } = await supabase.rpc('submit_review', {
     teacher: lesson.teacherId,
     lesson: lesson.id,
@@ -131,7 +131,7 @@ export async function answerReview(lesson: Lesson, s: ReviewSubmission): Promise
     answer_1: s.answer1,
     answer_2: s.answer2,
   });
-  if (!error) return null;
+  if (!error) return { answered: true };
   return { refused: error.code === 'P0001' ? error.message : undefined };
 }
 

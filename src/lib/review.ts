@@ -8,8 +8,9 @@
  * the device ties the student to what they wrote, and the answer itself is
  * never read back.
  */
+import type { ExitTicketState } from './exitTicket.ts';
 import { formatTime } from './format.ts';
-import { exitClosesAt, exitOpensAt, isExitOpen, type Lesson } from './lessons.ts';
+import { exitClosesAt, exitOpensAt, type Lesson } from './lessons.ts';
 
 export type ReviewState =
   /** The lesson has no review. */
@@ -24,15 +25,18 @@ export type ReviewState =
   | { kind: 'answered' }
   | { kind: 'closed'; closedAt: Date };
 
-/** `answered` is undefined until the server has said. */
-export function reviewState(lesson: Lesson, answered: boolean | undefined, now: Date): ReviewState {
+/** Open while the exit ticket is. `answered` is undefined until the server has said. */
+export function reviewState(lesson: Lesson, exit: ExitTicketState, answered: boolean | undefined): ReviewState {
   if (!lesson.review) return { kind: 'none' };
   if (answered) return { kind: 'answered' };
-  if (isExitOpen(lesson, now)) {
-    return answered === undefined ? { kind: 'checking' } : { kind: 'open', prompts: lesson.review, closesAt: exitClosesAt(lesson) };
+  switch (exit.kind) {
+    case 'not-open':
+      return { kind: 'not-open' };
+    case 'open':
+      return answered === undefined ? { kind: 'checking' } : { kind: 'open', prompts: lesson.review, closesAt: exit.closesAt };
+    case 'closed':
+      return { kind: 'closed', closedAt: exit.closedAt };
   }
-  if (now.getTime() < exitOpensAt(lesson).getTime()) return { kind: 'not-open' };
-  return { kind: 'closed', closedAt: exitClosesAt(lesson) };
 }
 
 /** What the form holds. */

@@ -3,7 +3,8 @@
 // the exit ticket's "Anonym" part, apart from the named ticket, sees only
 // "Abgegeben", hands in the named ticket separately, and a second answer from
 // a window opened before she answered is refused. Nothing on the device keeps
-// what she wrote.
+// what she wrote. Noah does it the other way round: the named ticket first,
+// then the review.
 //
 // The test plants its own lesson, started a minute or two ago, in the seeded
 // course INF-3a, with the review switched on in its plan, and opens its exit
@@ -160,6 +161,22 @@ test('Lea answers the review and the exit ticket independently, sees "Abgegeben"
   // Not even the service role reads what was written.
   const { error } = await student.from('review_responses').select('rating');
   expect(error?.code).toBe('42501');
+});
+
+test('Noah hands in the exit ticket first, and answers the review after', async ({ page }) => {
+  await signIn(page, 'noah@seed.test');
+  const ticket = exitTicket(page);
+  await ticket.getByLabel('Alles klar').check();
+  await ticket.getByRole('button', { name: 'Abgeben', exact: true }).click();
+  await expect(ticket.getByRole('status').filter({ hasText: /^Abgegeben \d\d:\d\d · du kannst/ })).toBeVisible();
+
+  // Handing in answered nothing anonymous: the part is still open.
+  const part = anonym(page);
+  await expect(part.getByRole('button', { name: 'Anonym abgeben' })).toBeVisible();
+  await stars(page, '3').check();
+  await part.getByRole('button', { name: 'Anonym abgeben' }).click();
+  await expect(part.getByRole('status')).toHaveText('Abgegeben');
+  expect(await teacherCount()).toEqual({ answered: 2, enrolled: 4 });
 });
 
 test('a lesson without a review has no anonymous part', async ({ page }) => {

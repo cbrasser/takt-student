@@ -1,12 +1,13 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import type { ExitTicketState } from './exitTicket';
   import { formatTime } from './format';
   import { lessonKey, type Lesson } from './lessons';
   import { emptyReview, reviewRefusal, reviewState, reviewSubmissionOf } from './review';
   import { answerReview, reviewAnswered } from './supabase';
 
   /** The exit ticket's anonymous part: its own form and its own button, apart from the named ticket. */
-  let { lesson, now }: { lesson: Lesson; now: Date } = $props();
+  let { lesson, exit }: { lesson: Lesson; exit: ExitTicketState } = $props();
 
   // Whether the student has answered, from the server and in memory only:
   // nothing on the device ties them to their answer.
@@ -16,14 +17,14 @@
   let problem = $state<string | null>(null);
 
   const RATINGS = [1, 2, 3, 4, 5];
-  const review = $derived(reviewState(lesson, answered, now));
+  const review = $derived(reviewState(lesson, exit, answered));
 
   // Asked once per lesson shown, not on every re-read of the lessons, which
   // would tear down the form being typed in. A failed ask shows the form: the
   // server refuses a second answer anyway.
-  const asked = $derived(lesson.review ? lessonKey(lesson) : null);
+  const reviewedLesson = $derived(lesson.review ? lessonKey(lesson) : null);
   $effect(() => {
-    if (!asked) return;
+    if (!reviewedLesson) return;
     const shown = untrack(() => lesson);
     let live = true;
     answered = undefined;
@@ -48,7 +49,7 @@
     problem = null;
     const result = await answerReview(lesson, out.submission);
     busy = false;
-    const refusal = result && reviewRefusal(result.refused, lesson);
+    const refusal = 'refused' in result ? reviewRefusal(result.refused, lesson) : null;
     if (refusal) problem = refusal.problem;
     if (!refusal || refusal.answered) {
       answered = true;

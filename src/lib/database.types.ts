@@ -586,6 +586,21 @@ export type Database = {
         }
         Relationships: []
       }
+      review_closures: {
+        Row: {
+          lesson_id: string
+          teacher_id: string
+        }
+        Insert: {
+          lesson_id: string
+          teacher_id: string
+        }
+        Update: {
+          lesson_id?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
       review_responses: {
         Row: {
           answer_1: string | null
