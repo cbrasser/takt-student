@@ -111,6 +111,13 @@ test('a material path is resolved against the course site', () => {
   assert.equal(materialUrl('Informatik/Kryptologie/xor', SITE), 'https://lecture.example.ch/Informatik/Kryptologie/xor');
 });
 
+test('a script page links to where the site publishes it, not to its source', () => {
+  assert.equal(materialUrl('Informatik/Kryptologie/xor.md', SITE), 'https://lecture.example.ch/Informatik/Kryptologie/xor.html');
+  assert.equal(materialUrl('Informatik/Kryptologie/index.md', SITE), 'https://lecture.example.ch/Informatik/Kryptologie/');
+  assert.equal(materialUrl('index.md', SITE), 'https://lecture.example.ch/');
+  assert.equal(materialUrl('https://example.org/notes.md', SITE), 'https://example.org/notes.md');
+});
+
 test('a site URL without a trailing slash and a path with a leading one still join', () => {
   assert.equal(materialUrl('/Informatik/xor', 'https://lecture.example.ch/kurs'), 'https://lecture.example.ch/kurs/Informatik/xor');
 });

@@ -150,6 +150,9 @@ export function previousLesson(lessons: Lesson[], lesson: Lesson): Lesson | null
 const WEB = /^https?:\/\//i;
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 
+/** Where the site publishes a source page: `x.md` as `x.html`, a folder's `index.md` as the folder. */
+const published = (path: string) => path.replace(/(^|\/)index\.md$/i, '$1').replace(/\.md$/i, '.html');
+
 /**
  * Where a material ref links to: a full web URL as it is, a path inside the
  * course's site joined to `siteUrl`. Null when there is nothing safe to link
@@ -161,7 +164,7 @@ export function materialUrl(path: string, siteUrl: string | null): string | null
   if (!p || SCHEME.test(p) || !siteUrl || !WEB.test(siteUrl)) return null;
   const base = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`;
   try {
-    const url = new URL(p.replace(/^\/+/, ''), base);
+    const url = new URL(published(p.replace(/^\/+/, '')), base);
     return WEB.test(url.href) ? url.href : null;
   } catch {
     return null;
