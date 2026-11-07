@@ -388,7 +388,6 @@ export type Database = {
       }
       teachers: {
         Row: {
-          check_in_cutoff_minutes: number
           created_at: string
           email: string | null
           id: string
@@ -399,7 +398,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          check_in_cutoff_minutes?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -410,7 +408,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          check_in_cutoff_minutes?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -418,6 +415,30 @@ export type Database = {
           review_prompts?: string[]
           roster_source?: string
           site_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      templates: {
+        Row: {
+          doc: Json
+          id: string
+          removed: boolean | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          doc: Json
+          id: string
+          removed?: boolean | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          doc?: Json
+          id?: string
+          removed?: boolean | null
+          teacher_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -527,47 +548,6 @@ export type Database = {
         }
         Relationships: []
       }
-      check_ins: {
-        Row: {
-          checked_in_at: string | null
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          present_by_hand: boolean
-          student_id: string
-          teacher_id: string
-          updated_at: string
-        }
-        Insert: {
-          checked_in_at?: string | null
-          course_id: string
-          excused?: boolean
-          lesson_id: string
-          present_by_hand?: boolean
-          student_id: string
-          teacher_id: string
-          updated_at?: string
-        }
-        Update: {
-          checked_in_at?: string | null
-          course_id?: string
-          excused?: boolean
-          lesson_id?: string
-          present_by_hand?: boolean
-          student_id?: string
-          teacher_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "check_ins_teacher_id_lesson_id_fkey"
-            columns: ["teacher_id", "lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["teacher_id", "id"]
-          },
-        ]
-      }
       courses: {
         Row: {
           id: string
@@ -597,85 +577,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      exit_notes: {
-        Row: {
-          course_id: string
-          lesson_id: string
-          note: string
-          student_id: string
-          teacher_id: string
-          updated_at: string
-        }
-        Insert: {
-          course_id: string
-          lesson_id: string
-          note?: string
-          student_id: string
-          teacher_id: string
-          updated_at?: string
-        }
-        Update: {
-          course_id?: string
-          lesson_id?: string
-          note?: string
-          student_id?: string
-          teacher_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exit_notes_teacher_id_lesson_id_fkey"
-            columns: ["teacher_id", "lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["teacher_id", "id"]
-          },
-        ]
-      }
-      exit_tickets: {
-        Row: {
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          ratings: Json
-          student_id: string
-          submitted_at: string | null
-          teacher_id: string
-          unclear: string | null
-          updated_at: string
-        }
-        Insert: {
-          course_id: string
-          excused?: boolean
-          lesson_id: string
-          ratings?: Json
-          student_id: string
-          submitted_at?: string | null
-          teacher_id: string
-          unclear?: string | null
-          updated_at?: string
-        }
-        Update: {
-          course_id?: string
-          excused?: boolean
-          lesson_id?: string
-          ratings?: Json
-          student_id?: string
-          submitted_at?: string | null
-          teacher_id?: string
-          unclear?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exit_tickets_teacher_id_lesson_id_fkey"
-            columns: ["teacher_id", "lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["teacher_id", "id"]
-          },
-        ]
       }
       lessons: {
         Row: {
@@ -797,29 +698,6 @@ export type Database = {
     }
     Functions: {
       archived: { Args: { doc: Json }; Returns: boolean }
-      check_in: {
-        Args: { lesson: string; teacher: string }
-        Returns: {
-          checked_in_at: string | null
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          present_by_hand: boolean
-          student_id: string
-          teacher_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "check_ins"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      check_in_start: {
-        Args: { course: string; teacher: string }
-        Returns: string
-      }
       copy_assessment: {
         Args: { assessment: string; teacher: string }
         Returns: undefined
@@ -838,35 +716,9 @@ export type Database = {
         }
         Returns: undefined
       }
-      is_enrolled:
-        | { Args: { course: string; teacher: string }; Returns: boolean }
-        | {
-            Args: { course: string; student: string; teacher: string }
-            Returns: boolean
-          }
-      mark: {
-        Args: {
-          excused: boolean
-          lesson: string
-          present: boolean
-          student: string
-        }
-        Returns: {
-          checked_in_at: string | null
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          present_by_hand: boolean
-          student_id: string
-          teacher_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "check_ins"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+      is_enrolled: {
+        Args: { course: string; teacher: string }
+        Returns: boolean
       }
       open_exit_ticket: { Args: { lesson: string }; Returns: string }
       review_answered: {
@@ -882,98 +734,8 @@ export type Database = {
       }
       review_prompts: { Args: { review: Json }; Returns: string[] }
       review_results: { Args: { lesson: string }; Returns: Json }
-      set_excused: {
-        Args: { lesson: string; mark: boolean; student: string }
-        Returns: {
-          checked_in_at: string | null
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          present_by_hand: boolean
-          student_id: string
-          teacher_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "check_ins"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      set_present: {
-        Args: { lesson: string; mark: boolean; student: string }
-        Returns: {
-          checked_in_at: string | null
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          present_by_hand: boolean
-          student_id: string
-          teacher_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "check_ins"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      set_ticket_excused: {
-        Args: { lesson: string; mark: boolean; student: string }
-        Returns: {
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          ratings: Json
-          student_id: string
-          submitted_at: string | null
-          teacher_id: string
-          unclear: string | null
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "exit_tickets"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      status: {
-        Args: { "": Database["takt_student"]["Tables"]["check_ins"]["Row"] }
-        Returns: {
-          error: true
-        } & "the function takt_student.status with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
-      }
       string: { Args: { v: Json }; Returns: string }
       strings: { Args: { v: Json }; Returns: string[] }
-      submit_exit_ticket: {
-        Args: {
-          lesson: string
-          note: string
-          ratings: Json
-          teacher: string
-          unclear: string
-        }
-        Returns: {
-          course_id: string
-          excused: boolean
-          lesson_id: string
-          ratings: Json
-          student_id: string
-          submitted_at: string | null
-          teacher_id: string
-          unclear: string | null
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "exit_tickets"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       submit_review: {
         Args: {
           answer_1: string
@@ -984,21 +746,10 @@ export type Database = {
         }
         Returns: undefined
       }
-      ticket_kind: {
-        Args: { excused: boolean; submitted_at: string }
-        Returns: string
-      }
-      ticket_status: {
-        Args: { "": Database["takt_student"]["Tables"]["check_ins"]["Row"] }
-        Returns: {
-          error: true
-        } & "the function takt_student.ticket_status with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
-      }
       topic_title: {
         Args: { course: string; day: string; teacher: string }
         Returns: string
       }
-      valid_ratings: { Args: { ratings: Json }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
