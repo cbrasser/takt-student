@@ -6,7 +6,7 @@
  * `reminders.ts`.
  */
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
-import type { Notice } from './reviewNotice';
+import type { Notice } from './notice';
 import type { ReminderKind } from './reminders';
 
 /** One switch each in Settings. */

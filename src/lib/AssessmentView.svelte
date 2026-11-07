@@ -75,12 +75,6 @@
     font-weight: 600;
   }
 
-  .list {
-    padding-left: 1.25em;
-    display: grid;
-    gap: var(--s-2);
-  }
-
   .text {
     white-space: pre-line;
     overflow-wrap: anywhere;

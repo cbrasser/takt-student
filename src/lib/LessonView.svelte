@@ -96,12 +96,6 @@
     margin-bottom: var(--s-2);
   }
 
-  .list {
-    padding-left: 1.25em;
-    display: grid;
-    gap: var(--s-2);
-  }
-
   .text {
     white-space: pre-line;
   }

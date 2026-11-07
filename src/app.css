@@ -77,6 +77,8 @@ input {
   --s-5: 24px;
   --s-6: 32px;
   --s-7: 48px;
+  /* A list's bullets, inside its leaf */
+  --indent: 1.25em;
 
   /* Type */
   --font-display: "Bricolage Grotesque Variable", "Avenir Next", system-ui, sans-serif;
@@ -346,6 +348,13 @@ button.badge {
   border-bottom: var(--line);
   padding-bottom: var(--s-1);
   margin: var(--s-4) 0 var(--s-2);
+}
+
+/* A bulleted list in a leaf: goals, "Wo wir stehen". */
+.list {
+  padding-left: var(--indent);
+  display: grid;
+  gap: var(--s-2);
 }
 
 /* A checkbox with its label: the settings' switch. */

@@ -4,6 +4,7 @@
  * time. Pure, so it is tested without a database, a clock or the OS.
  */
 import { formatTime } from './format.ts';
+import type { Notice } from './notice.ts';
 import { isReviewOpen, lessonKey, reviewClosesAt, type Course, type Lesson } from './lessons.ts';
 
 export interface ReviewNotices {
@@ -37,12 +38,6 @@ export function reviewNotices(
     ask,
     seen: open.filter((l) => !ask.includes(l)).map(lessonKey),
   };
-}
-
-/** What the OS notification says. */
-export interface Notice {
-  title: string;
-  body: string;
 }
 
 /** "Umfrage ist offen" / "3a · Informatik · offen bis 09:15" */

@@ -110,12 +110,6 @@
     line-height: 1.1;
   }
 
-  .list {
-    padding-left: 1.25em;
-    display: grid;
-    gap: var(--s-1);
-  }
-
   .text {
     white-space: pre-line;
   }

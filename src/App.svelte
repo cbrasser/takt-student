@@ -159,15 +159,18 @@
     });
   });
 
-  /** Asks once whether the student has answered the lesson's Umfrage; a failed ask counts as not answered. */
+  /**
+   * Asks whether the student has answered the lesson's Umfrage. A failed ask
+   * records nothing, so the next poll asks again and nothing fires meanwhile.
+   */
   async function askAnswered(user: string, l: Lesson) {
     const key = lessonKey(l);
     if (asking.has(key)) return;
     asking.add(key);
     const answered = await reviewAnswered(l);
     // Signed out or switched while the request ran: drop it.
-    if (user !== userId || !asking.delete(key)) return;
-    answeredReviews = new Map(answeredReviews).set(key, answered ?? false);
+    if (user !== userId || !asking.delete(key) || answered === undefined) return;
+    answeredReviews = new Map(answeredReviews).set(key, answered);
   }
 
   function switchNotice(type: NoticeType, on: boolean) {
