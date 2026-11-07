@@ -96,7 +96,7 @@ test('the sent keys keep only what can still fire, so they don\'t grow forever',
 });
 
 test('the notification names the kind, when, the course and the title', () => {
-  const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: null, siteUrl: null, checkInStart: null, semesters: [] };
+  const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', siteUrl: null, semesters: [] };
   assert.deepEqual(reminderNotice({ kind: 'week', assessment: pruefung }, course), { title: 'Prüfung in 7 Tagen', body: '3a · Informatik · Titel pruefung' });
   assert.deepEqual(reminderNotice({ kind: 'tomorrow', assessment: abgabe }, course), { title: 'Abgabe morgen', body: '3a · Informatik · Titel abgabe · bis 18:00' });
   assert.deepEqual(reminderNotice({ kind: 'today', assessment: abgabe }, undefined), { title: 'Abgabe heute', body: 'Titel abgabe · bis 18:00' });

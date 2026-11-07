@@ -32,7 +32,7 @@ test('countdown: exactly at the deadline and after it, "abgelaufen"', () => {
   assert.equal(countdown(deadline, new Date(deadline.getTime() + 3 * DAY)), 'abgelaufen');
 });
 
-const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', teacherName: 'Anna Muster', siteUrl: null, checkInStart: null, semesters: [] };
+const course: Course = { teacherId: 'anna', id: 'inf', name: '3a · Informatik', siteUrl: null, semesters: [] };
 
 /** A lesson of the course at 08:15–09:00 Zurich time on the given day. */
 function lesson(date: string, extra: Partial<Lesson> = {}): Lesson {
@@ -42,7 +42,7 @@ function lesson(date: string, extra: Partial<Lesson> = {}): Lesson {
     courseId: 'inf',
     startsAt: new Date(`${date}T08:15:00+01:00`),
     endsAt: new Date(`${date}T09:00:00+01:00`),
-    exitOpenedAt: null,
+    reviewOpenedAt: null,
     title: 'INF',
     topic: `Thema ${date}`,
     goals: [],

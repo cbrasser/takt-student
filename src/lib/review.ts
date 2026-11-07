@@ -1,42 +1,43 @@
 /**
- * The anonymous review of a lesson, answered in its exit ticket's own
- * "Anonym" part: whether it shows, what the form holds, what it sends and
- * what a refusal says. Pure, so it is tested without a database or a clock.
+ * The Umfrage: a lesson's anonymous review. Whether it shows, what the form
+ * holds, what it sends and what a refusal says. Pure, so it is tested without
+ * a database or a clock. The UI calls it "Umfrage"; the code and the database
+ * keep `review`.
  *
  * Whether the student has answered comes from the server
  * (`takt_student.review_answered()`) and is kept in memory only: nothing on
  * the device ties the student to what they wrote, and the answer itself is
  * never read back.
  */
-import type { ExitTicketState } from './exitTicket.ts';
 import { formatTime } from './format.ts';
-import { exitClosesAt, exitOpensAt, type Lesson } from './lessons.ts';
+import { isReviewOpen, reviewClosesAt, reviewOpensAt, type Lesson } from './lessons.ts';
 
 export type ReviewState =
-  /** The lesson has no review. */
+  /** The lesson has no Umfrage. */
   | { kind: 'none' }
-  /** The exit ticket isn't open yet. */
+  /** Not open yet: nothing to show. */
   | { kind: 'not-open' }
   /** Open, while the server is asked whether the student has answered. */
   | { kind: 'checking' }
   /** The form, with the lesson's two prompts. */
   | { kind: 'open'; prompts: [string, string]; closesAt: Date }
-  /** "Abgegeben", and nothing of the answer. */
+  /** Open, and answered: "Abgegeben", and nothing of the answer. */
   | { kind: 'answered' }
-  | { kind: 'closed'; closedAt: Date };
+  /** Closed: nothing to show any more, answered or not. */
+  | { kind: 'closed' };
 
-/** Open while the exit ticket is. `answered` is undefined until the server has said. */
-export function reviewState(lesson: Lesson, exit: ExitTicketState, answered: boolean | undefined): ReviewState {
+/**
+ * The Umfrage at `now`, from ten minutes before the end (or the teacher's
+ * early open) until 15 minutes after it. `answered` is undefined until the
+ * server has said.
+ */
+export function reviewState(lesson: Lesson, answered: boolean | undefined, now: Date): ReviewState {
   if (!lesson.review) return { kind: 'none' };
-  if (answered) return { kind: 'answered' };
-  switch (exit.kind) {
-    case 'not-open':
-      return { kind: 'not-open' };
-    case 'open':
-      return answered === undefined ? { kind: 'checking' } : { kind: 'open', prompts: lesson.review, closesAt: exit.closesAt };
-    case 'closed':
-      return { kind: 'closed', closedAt: exit.closedAt };
+  if (isReviewOpen(lesson, now)) {
+    if (answered) return { kind: 'answered' };
+    return answered === undefined ? { kind: 'checking' } : { kind: 'open', prompts: lesson.review, closesAt: reviewClosesAt(lesson) };
   }
+  return now.getTime() < reviewOpensAt(lesson).getTime() ? { kind: 'not-open' } : { kind: 'closed' };
 }
 
 /** What the form holds. */
@@ -66,19 +67,19 @@ export function reviewSubmissionOf(draft: ReviewDraft): { submission: ReviewSubm
 
 /**
  * Why the server refused, from the reason `takt_student.submit_review()`
- * raises. A second answer means the student has answered: the part then
+ * raises. A second answer means the student has answered: the leaf then
  * shows "Abgegeben".
  */
 export function reviewRefusal(reason: string | undefined, lesson: Lesson): { answered: boolean; problem: string } {
   switch (reason) {
     case 'review_answered':
-      return { answered: true, problem: 'Du hast diese Bewertung schon abgegeben.' };
+      return { answered: true, problem: 'Du hast diese Umfrage schon abgegeben.' };
     case 'review_not_open':
-      return { answered: false, problem: `Die Bewertung öffnet um ${formatTime(exitOpensAt(lesson))}.` };
+      return { answered: false, problem: `Die Umfrage öffnet um ${formatTime(reviewOpensAt(lesson))}.` };
     case 'review_closed':
-      return { answered: false, problem: `Die Bewertung ist seit ${formatTime(exitClosesAt(lesson))} geschlossen.` };
+      return { answered: false, problem: `Die Umfrage ist seit ${formatTime(reviewClosesAt(lesson))} geschlossen.` };
     case 'review_none':
-      return { answered: false, problem: 'Diese Lektion hat keine Bewertung mehr.' };
+      return { answered: false, problem: 'Diese Lektion hat keine Umfrage mehr.' };
     case 'review_not_enrolled':
       return { answered: false, problem: 'Du bist nicht in diesem Kurs eingeschrieben.' };
     case 'review_invalid_rating':

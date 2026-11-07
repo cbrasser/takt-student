@@ -1,8 +1,8 @@
 // The student app, end to end, against the local Supabase stack: Lea signs
 // in and her current lesson opens by itself, with its topic, goals and
-// material links and without the teacher's cue; she checks in with "Bereit"
-// and is on time; the session survives a restart and sign-out clears it;
-// Liam, in no Takt course, sees "Noch keine Lektionen".
+// material links, without the teacher's cue, and with no "Bereit" and no
+// exit ticket; the session survives a restart and sign-out clears it; Liam,
+// in no Takt course, sees "Noch keine Lektionen".
 //
 // The test plants its own lesson, started a minute or two ago, in the seeded
 // course INF-3a (Anna's, with Lea on the roster), so it doesn't depend on
@@ -47,9 +47,9 @@ test.beforeAll(async () => {
   if (error || !course) throw new Error(`the seed isn't loaded (pnpm db:reset in cbra-platform): ${error?.message}`);
   teacherId = course.teacher_id;
 
-  // Started a minute or two ago, inside the default five-minute cutoff, off
-  // the seed's five-minute grid so the id never meets a seeded lesson; later
-  // than the seed's "now" lesson, so it is the one that opens.
+  // Started a minute or two ago, off the seed's five-minute grid so the id
+  // never meets a seeded lesson; later than the seed's "now" lesson, so it is
+  // the one that opens.
   const start = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 60_000);
   if (start.getMinutes() % 5 === 0) start.setMinutes(start.getMinutes() - 1);
   const { date, time } = zurichStamp(start);
@@ -74,7 +74,7 @@ test.beforeAll(async () => {
       version: 1, id: lessonId, courseId: COURSE, date, start: `${time.slice(0, 2)}:${time.slice(2)}`,
       lessonTitle: 'INF-3a', minutes: 45, breaks: [], step: 3, updatedAt: 0, status: 'planned',
       topic: TOPIC, intent: 'Sie sollen Hashes von Verschlüsselung unterscheiden.',
-      goals: [GOAL], standing: [STANDING], notes: NOTES, homework: HOMEWORK,
+      goals: [GOAL], studentStanding: [STANDING], notes: NOTES, homework: HOMEWORK,
       blocks: [
         {
           id: 'e2e-b1', phase: 'input', title: 'Hashes', minutes: 45, cue: CUE,
@@ -102,7 +102,7 @@ async function signIn(page: Page, email: string) {
   await page.getByRole('button', { name: 'Anmelden' }).click();
 }
 
-test('Lea signs in and her current lesson opens by itself, without the cue', async ({ page }) => {
+test('Lea signs in and her current lesson opens by itself, without the cue, "Bereit" or an exit ticket', async ({ page }) => {
   await signIn(page, 'lea@seed.test');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(TOPIC);
@@ -113,22 +113,13 @@ test('Lea signs in and her current lesson opens by itself, without the cue', asy
   await expect(page.getByRole('link', { name: 'SHA-2 (Wikipedia)' })).toHaveAttribute('href', 'https://de.wikipedia.org/wiki/SHA-2');
   await expect(page.getByRole('heading', { name: 'Letzte Lektion' })).toBeVisible();
 
+  await expect(page.getByRole('button', { name: 'Bereit' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Umfrage' })).toHaveCount(0);
+
   const text = await page.locator('body').innerText();
   expect(text).not.toContain(CUE);
   expect(text).not.toContain(NOTES);
-});
-
-test('Lea checks in with "Bereit" and is on time', async ({ page }) => {
-  await signIn(page, 'lea@seed.test');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(TOPIC);
-
-  await page.getByRole('button', { name: 'Bereit' }).click();
-  await expect(page.getByRole('status')).toHaveText(/^Eingecheckt \d\d:\d\d · pünktlich$/);
-  await expect(page.getByRole('button', { name: 'Bereit' })).toHaveCount(0);
-
-  // Read back from the server, not just the button's answer.
-  await page.reload();
-  await expect(page.getByRole('status')).toHaveText(/^Eingecheckt \d\d:\d\d · pünktlich$/);
+  expect(text).not.toMatch(/Exit-Ticket|Eingecheckt/);
 });
 
 test('the session survives a restart, and signing out clears it', async ({ context }) => {

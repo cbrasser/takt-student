@@ -1,20 +1,22 @@
 /**
- * The desktop app's notifications: "Exit-Ticket ist offen" and the reminders
- * of Prüfungen and Abgaben. Their switches and what was already sent live in
- * the app's own storage; this sends the OS notification itself. Which lessons
- * and assessments they fire for is decided in `exitNotice.ts` and
+ * The desktop app's notifications: "Umfrage ist offen" and the reminders of
+ * Prüfungen and Abgaben. Their switches and what was already sent live in the
+ * app's own storage; this sends the OS notification itself. Which lessons and
+ * assessments they fire for is decided in `reviewNotice.ts` and
  * `reminders.ts`.
  */
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
-import type { Notice } from './exitNotice';
+import type { Notice } from './notice';
 import type { ReminderKind } from './reminders';
 
 /** One switch each in Settings. */
-export type NoticeType = 'exit' | ReminderKind;
+export type NoticeType = 'review' | ReminderKind;
 export type NoticeSwitches = Record<NoticeType, boolean>;
 
+// The Umfrage's keys are the exit ticket's, which its notice replaced: a
+// student's switch carries over, and nothing stored says "review".
 const SWITCH_KEYS: Record<NoticeType, string> = {
-  exit: 'takt-student.exit-notice',
+  review: 'takt-student.exit-notice',
   week: 'takt-student.reminder-week',
   tomorrow: 'takt-student.reminder-tomorrow',
   today: 'takt-student.reminder-today',
@@ -29,7 +31,7 @@ export function noticeSwitches(): NoticeSwitches {
       return true;
     }
   };
-  return { exit: on('exit'), week: on('week'), tomorrow: on('tomorrow'), today: on('today') };
+  return { review: on('review'), week: on('week'), tomorrow: on('tomorrow'), today: on('today') };
 }
 
 export function setNoticeOn(type: NoticeType, on: boolean) {
@@ -62,7 +64,7 @@ function writeKeys(storageKey: string, kept: string[]) {
 const seenKey = (userId: string) => `takt-student.exit-notice-seen.${userId}`;
 const sentKey = (userId: string) => `takt-student.reminders-sent.${userId}`;
 
-/** The `lessonKey`s this student's app has seen open. */
+/** The `lessonKey`s whose Umfrage this student's app has seen open. */
 export const seenOpen = (userId: string) => readKeys(seenKey(userId));
 export const keepSeenOpen = (userId: string, seen: string[]) => writeKeys(seenKey(userId), seen);
 

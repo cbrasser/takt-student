@@ -15,8 +15,8 @@ export interface Lesson {
   courseId: string;
   startsAt: Date;
   endsAt: Date;
-  /** When the teacher opened the exit ticket early from Run; null until then. */
-  exitOpenedAt: Date | null;
+  /** When the teacher opened the Umfrage early from Run (`exit_opened_at`); null until then. */
+  reviewOpenedAt: Date | null;
   title: string;
   /** Empty while the teacher hasn't planned the lesson ("Noch kein Thema"). */
   topic: string;
@@ -24,7 +24,7 @@ export interface Lesson {
   standing: string[];
   homework: string;
   materials: MaterialRef[];
-  /** The anonymous review's two prompts; null when the lesson has none. */
+  /** The Umfrage's two prompts (the anonymous review); null when the lesson has none. */
   review: [string, string] | null;
 }
 
@@ -33,16 +33,8 @@ export interface Course {
   id: string;
   /** As Takt names it: "3a · Informatik". */
   name: string;
-  /** The teacher, as the exit ticket names them; null when the server has no name. */
-  teacherName: string | null;
   /** The teacher's published site, the base of material paths. */
   siteUrl: string | null;
-  /**
-   * The day of the course's first check-in or mark ("2026-09-16"), from
-   * `takt_student.check_in_start()`: lessons before it, from before check-in
-   * existed, have no attendance status. Null while the course has none.
-   */
-  checkInStart: string | null;
   /** The teacher's school years' semesters, in order ("Demnächst" runs to the current one's end); none without a school year. */
   semesters: Semester[];
 }
@@ -54,7 +46,7 @@ export interface Semester {
 }
 
 export interface Home {
-  /** The lesson whose window is open, else the one whose exit ticket is: it opens by itself. */
+  /** The lesson whose window is open, else the one whose Umfrage is: it opens by itself. */
   current: Lesson | null;
   /** The next lesson of each course whose window hasn't opened, soonest first. */
   next: Lesson[];
@@ -75,7 +67,7 @@ export function lessonKey(l: { teacherId: string; id: string }): string {
   return `${l.teacherId}/${l.id}`;
 }
 
-/** When a lesson's window opens: it opens by itself, and "Bereit" shows. */
+/** When a lesson's window opens, and it opens by itself. */
 export function opensAt(l: Lesson): Date {
   return new Date(l.startsAt.getTime() - OPENS_BEFORE_MS);
 }
@@ -86,26 +78,26 @@ export function isOpen(l: Lesson, now: Date): boolean {
   return opensAt(l).getTime() <= t && t < l.endsAt.getTime();
 }
 
-/** The exit ticket opens this long before the end, unless the teacher opens it earlier. */
-export const EXIT_OPENS_BEFORE_END_MS = 10 * 60_000;
-/** The exit ticket closes this long after the end. */
-export const EXIT_CLOSES_AFTER_END_MS = 15 * 60_000;
+/** The Umfrage opens this long before the end, unless the teacher opens it earlier. */
+export const REVIEW_OPENS_BEFORE_END_MS = 10 * 60_000;
+/** The Umfrage closes this long after the end. */
+export const REVIEW_CLOSES_AFTER_END_MS = 15 * 60_000;
 
-/** When the exit ticket opens: ten minutes before the end, or the teacher's early open if that is earlier. */
-export function exitOpensAt(l: Lesson): Date {
-  const usual = l.endsAt.getTime() - EXIT_OPENS_BEFORE_END_MS;
-  return new Date(l.exitOpenedAt ? Math.min(usual, l.exitOpenedAt.getTime()) : usual);
+/** When the Umfrage opens: ten minutes before the end, or the teacher's early open if that is earlier. */
+export function reviewOpensAt(l: Lesson): Date {
+  const usual = l.endsAt.getTime() - REVIEW_OPENS_BEFORE_END_MS;
+  return new Date(l.reviewOpenedAt ? Math.min(usual, l.reviewOpenedAt.getTime()) : usual);
 }
 
-/** When the exit ticket closes, and the server refuses it. */
-export function exitClosesAt(l: Lesson): Date {
-  return new Date(l.endsAt.getTime() + EXIT_CLOSES_AFTER_END_MS);
+/** When the Umfrage closes, and the server refuses it. */
+export function reviewClosesAt(l: Lesson): Date {
+  return new Date(l.endsAt.getTime() + REVIEW_CLOSES_AFTER_END_MS);
 }
 
-/** Is the lesson's exit ticket open, from `exitOpensAt` until `exitClosesAt`? */
-export function isExitOpen(l: Lesson, now: Date): boolean {
+/** Is the lesson's Umfrage open, from `reviewOpensAt` until `reviewClosesAt`? Never for a lesson without one. */
+export function isReviewOpen(l: Lesson, now: Date): boolean {
   const t = now.getTime();
-  return exitOpensAt(l).getTime() <= t && t < exitClosesAt(l).getTime();
+  return l.review !== null && reviewOpensAt(l).getTime() <= t && t < reviewClosesAt(l).getTime();
 }
 
 const byStart = (a: Lesson, b: Lesson) => a.startsAt.getTime() - b.startsAt.getTime();
@@ -116,10 +108,10 @@ export function home(lessons: Lesson[], now: Date): Home {
 
   // Back to back, the next lesson opens before the one before it ends; the
   // later one is the one to get ready for. After its end a lesson stays on
-  // while its exit ticket is open, unless the next one has opened.
+  // while its Umfrage is open, unless the next one has opened.
   const open = sorted.filter((l) => isOpen(l, now));
-  const handingIn = sorted.filter((l) => isExitOpen(l, now));
-  const current = open[open.length - 1] ?? handingIn[handingIn.length - 1] ?? null;
+  const reviewing = sorted.filter((l) => isReviewOpen(l, now));
+  const current = open[open.length - 1] ?? reviewing[reviewing.length - 1] ?? null;
   const next = new Map<string, Lesson>();
   for (const l of sorted) {
     if (opensAt(l).getTime() > t && !next.has(courseKey(l))) next.set(courseKey(l), l);
@@ -130,9 +122,10 @@ export function home(lessons: Lesson[], now: Date): Home {
 
 /**
  * Which lesson stays on show when the current one changes: when a lesson
- * stops being current with nothing in its place (its exit ticket has closed)
- * while the student was following home, it stays, so they see the ticket
- * close; otherwise none, and home decides again. Keys are `lessonKey`s.
+ * stops being current with nothing in its place (it has ended, or its Umfrage
+ * has closed) while the student was following home, it stays, so what they
+ * are reading doesn't vanish; otherwise none, and home decides again. Keys
+ * are `lessonKey`s.
  */
 export function keptOnShow(was: string | null, current: string | null, followingHome: boolean): string | null {
   return current === null && was !== null && followingHome ? was : null;

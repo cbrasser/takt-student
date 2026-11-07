@@ -3,7 +3,7 @@
 //! account site and to materials open in the browser (plugin-opener). The
 //! release build looks for updates from the web app (src/lib/Update.svelte),
 //! which installs one through plugin-updater and restarts through
-//! plugin-process. "Exit-Ticket ist offen" is an OS notification
+//! plugin-process. "Umfrage ist offen" is an OS notification
 //! (plugin-notification), sent from the web app's polling. The Verlauf's
 //! Markdown export is saved through the system's save dialog (export_save).
 
