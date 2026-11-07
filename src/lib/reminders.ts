@@ -6,7 +6,7 @@
  * Pure, so it is tested without a database, a clock or the OS.
  */
 import { assessmentKey, kindLabel, type Assessment } from './assessments.ts';
-import type { Notice } from './exitNotice.ts';
+import type { Notice } from './reviewNotice.ts';
 import { addDays, formatDay, formatTime, hourOf, isoDay } from './format.ts';
 import type { Course } from './lessons.ts';
 

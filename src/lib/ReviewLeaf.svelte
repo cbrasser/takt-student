@@ -1,13 +1,12 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import type { ExitTicketState } from './exitTicket';
   import { formatTime } from './format';
   import { lessonKey, type Lesson } from './lessons';
   import { emptyReview, reviewRefusal, reviewState, reviewSubmissionOf } from './review';
   import { answerReview, reviewAnswered } from './supabase';
 
-  /** The exit ticket's anonymous part: its own form and its own button, apart from the named ticket. */
-  let { lesson, exit }: { lesson: Lesson; exit: ExitTicketState } = $props();
+  /** The Umfrage, the lesson's anonymous review: a leaf of its own, only while it is open. */
+  let { lesson, now }: { lesson: Lesson; now: Date } = $props();
 
   // Whether the student has answered, from the server and in memory only:
   // nothing on the device ties them to their answer.
@@ -17,7 +16,7 @@
   let problem = $state<string | null>(null);
 
   const RATINGS = [1, 2, 3, 4, 5];
-  const review = $derived(reviewState(lesson, exit, answered));
+  const review = $derived(reviewState(lesson, answered, now));
 
   // Asked once per lesson shown, not on every re-read of the lessons, which
   // would tear down the form being typed in. A failed ask shows the form: the
@@ -58,10 +57,10 @@
   }
 </script>
 
-{#if review.kind !== 'none' && review.kind !== 'not-open'}
-  <section class="anonym stack" aria-labelledby="review-title">
-    <h3 class="group" id="review-title">Anonym</h3>
-    <p class="note">Deine Lehrperson sieht nicht, wer das geschrieben hat.</p>
+{#if review.kind === 'checking' || review.kind === 'open' || review.kind === 'answered'}
+  <section class="leaf stack" aria-labelledby="review-title">
+    <h2 class="leaf-title" id="review-title">Umfrage</h2>
+    <p class="note">Anonym: Deine Lehrperson sieht nicht, wer das geschrieben hat.</p>
 
     {#if review.kind === 'open'}
       <form class="stack" onsubmit={submit}>
@@ -96,14 +95,6 @@
     {:else if review.kind === 'answered'}
       {#if problem}<p class="form-error" role="alert">{problem}</p>{/if}
       <p class="handed-in" role="status">Abgegeben</p>
-    {:else if review.kind === 'closed'}
-      <p class="muted" role="status">Die Bewertung ist seit {formatTime(review.closedAt)} geschlossen.</p>
     {/if}
   </section>
 {/if}
-
-<style>
-  .anonym {
-    margin-top: var(--s-5);
-  }
-</style>

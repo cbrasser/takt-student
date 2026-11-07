@@ -1,41 +1,29 @@
 <script lang="ts">
   import AssessmentBadges from './AssessmentBadges.svelte';
   import type { Assessment } from './assessments';
-  import type { CheckIn } from './checkin';
-  import CheckInButton from './CheckInButton.svelte';
-  import ExitTicketLeaf from './ExitTicketLeaf.svelte';
-  import { exitTicketState, type ExitTicket } from './exitTicket';
   import { formatDay, formatTimes, formatWhen } from './format';
   import type { Course, Lesson } from './lessons';
   import Materials from './Materials.svelte';
+  import ReviewLeaf from './ReviewLeaf.svelte';
 
   let {
     lesson,
     course,
     previous,
-    checkIn,
-    exitTicket,
     assessments,
     now,
-    oncheckin,
-    onhandin,
     onassessment,
   }: {
     lesson: Lesson;
     course: Course | undefined;
     previous: Lesson | null;
-    checkIn: CheckIn | undefined;
-    exitTicket: ExitTicket | undefined;
     /** Its course's Prüfungen and Abgaben on its day, as badges. */
     assessments: Assessment[];
     now: Date;
-    oncheckin: (c: CheckIn) => void;
-    onhandin: (t: ExitTicket) => void;
     onassessment: (a: Assessment) => void;
   } = $props();
 
   const siteUrl = $derived(course?.siteUrl ?? null);
-  const exit = $derived(exitTicketState(lesson, exitTicket, now));
 </script>
 
 <article class="stack">
@@ -47,17 +35,10 @@
     </p>
     <h1 class="display">{lesson.topic || 'Noch kein Thema'}</h1>
     <AssessmentBadges {assessments} onopen={onassessment} />
-    <CheckInButton {lesson} {checkIn} {now} {oncheckin} />
   </header>
 
-  <!-- While it is open the exit ticket comes first; once closed, after the lesson's content. -->
-  {#snippet exitTicketLeaf()}
-    {#if exit.kind !== 'not-open'}
-      <ExitTicketLeaf {lesson} teacherName={course?.teacherName ?? null} ticket={exitTicket} {exit} {onhandin} />
-    {/if}
-  {/snippet}
-
-  {#if exit.kind === 'open'}{@render exitTicketLeaf()}{/if}
+  <!-- The Umfrage comes first, and only while it is open. -->
+  <ReviewLeaf {lesson} {now} />
 
   {#if lesson.goals.length > 0}
     <section class="leaf">
@@ -90,8 +71,6 @@
       <Materials materials={lesson.materials} {siteUrl} />
     </section>
   {/if}
-
-  {#if exit.kind === 'closed'}{@render exitTicketLeaf()}{/if}
 
   {#if previous}
     <section class="leaf previous" aria-labelledby="previous-title">

@@ -6,7 +6,7 @@
   let { switches, onchange }: { switches: NoticeSwitches; onchange: (type: NoticeType, on: boolean) => void } = $props();
 
   const NOTICES: { type: NoticeType; label: string; when: string }[] = [
-    { type: 'exit', label: '«Exit-Ticket ist offen»', when: 'Einmal pro Lektion, wenn das Exit-Ticket öffnet, ausser du hast es schon abgegeben.' },
+    { type: 'review', label: '«Umfrage ist offen»', when: 'Einmal pro Lektion mit Umfrage, wenn sie öffnet, ausser du hast sie schon abgegeben.' },
     { type: 'week', label: '«Prüfung/Abgabe in 7 Tagen»', when: `Eine Woche vorher, ab ${FROM_HOUR} Uhr.` },
     { type: 'tomorrow', label: '«Prüfung/Abgabe morgen»', when: `Am Tag davor, ab ${FROM_HOUR} Uhr.` },
     { type: 'today', label: '«Abgabe heute»', when: `Am Tag der Abgabefrist, ab ${FROM_HOUR} Uhr, bis die Frist abläuft.` },

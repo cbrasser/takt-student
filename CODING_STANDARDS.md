@@ -12,11 +12,11 @@ Every colour, radius, shadow and space is a CSS variable in `src/app.css`, redef
 
 ## Decisions live in pure modules, tested with `node:test`
 
-Which lesson is current, next or last, and what a material path links to, are decided in `src/lib/lessons.ts` from plain data and a time passed in; what the "Bereit" button shows and when the app re-reads, in `src/lib/checkin.ts`; whether the exit ticket is open and what it sends, in `src/lib/exitTicket.ts`; for which lessons "Exit-Ticket ist offen" fires, in `src/lib/exitNotice.ts`. A view never compares times or builds a URL itself. A new rule of that kind lands in a pure module with its test.
+Which lesson is current, next or last, when the Umfrage is open, and what a material path links to, are decided in `src/lib/lessons.ts` from plain data and a time passed in; what the Umfrage shows and what it sends, in `src/lib/review.ts`; when the app re-reads, in `src/lib/refresh.ts`; for which lessons "Umfrage ist offen" fires, in `src/lib/reviewNotice.ts`. A view never compares times or builds a URL itself. A new rule of that kind lands in a pure module with its test.
 
 ## Data goes through `src/lib/supabase.ts`
 
-Views get plain `Lesson` and `Course` values; only `src/lib/supabase.ts` talks to Supabase. The app reads `takt_student` only, never `takt`, and writes only through `takt_student.check_in()` and `takt_student.submit_exit_ticket()`, which stamp the server's time, and `takt_student.submit_review()`, which stamps none and returns nothing, so the anonymous answer never comes back: row-level security is the guard, and the app never relies on its own filtering to hide another class.
+Views get plain `Lesson` and `Course` values; only `src/lib/supabase.ts` talks to Supabase. The app reads `takt_student` only, never `takt`, and writes only through `takt_student.submit_review()`, which stamps no time and returns nothing, so the anonymous answer never comes back: row-level security is the guard, and the app never relies on its own filtering to hide another class.
 
 ## Only the release build talks to production
 

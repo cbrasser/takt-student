@@ -1,14 +1,13 @@
-// The anonymous review, end to end, against the local Supabase stack: Lea's
-// lesson has a review and its exit ticket is open. Lea answers the review in
-// the exit ticket's "Anonym" part, apart from the named ticket, sees only
-// "Abgegeben", hands in the named ticket separately, and a second answer from
-// a window opened before she answered is refused. Nothing on the device keeps
-// what she wrote. Noah does it the other way round: the named ticket first,
-// then the review.
+// The Umfrage (the anonymous review), end to end, against the local Supabase
+// stack: Lea's current lesson has an Umfrage and the teacher has opened it
+// early. Lea sees no "Bereit" and no exit ticket, answers the Umfrage, sees
+// only "Abgegeben", also after a restart, and a second answer from a window
+// opened before she answered is refused. Nothing on the device keeps what she
+// wrote. Before it opens, and for a lesson without one, there is no Umfrage.
 //
 // The test plants its own lesson, started a minute or two ago, in the seeded
-// course INF-3a, with the review switched on in its plan, and opens its exit
-// ticket as the teacher's early open does, by stamping `exit_opened_at`.
+// course INF-3a, with the Umfrage switched on in its plan, and opens it as
+// the teacher's early open does, by stamping `exit_opened_at`.
 import { expect, test, type Page } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
@@ -24,11 +23,12 @@ const student = createClient(URL_, SERVICE_KEY, { db: { schema: 'takt_student' }
 
 const stamp = Date.now();
 const TOPIC = `Passwörter ${stamp}`;
-const PROMPTS = ['Was hat dir geholfen?', `Was war zu schnell? (${stamp})`];
-const HELPED = `Das Beispiel mit dem Wörterbuchangriff (${stamp}).`;
+const PROMPTS = ['Was hast du gut verstanden?', `Was war unklar? (${stamp})`];
+const UNDERSTOOD = `Das Beispiel mit dem Wörterbuchangriff (${stamp}).`;
 
 let teacherId = '';
 let lessonId = '';
+let planDoc: Record<string, unknown> = {};
 
 /** "2026-11-02_0815" on the Swiss clock: the date and time part of a lesson id. */
 function zurichStamp(d: Date): { date: string; time: string } {
@@ -67,16 +67,13 @@ test.beforeAll(async () => {
   });
   if (lessonError) throw lessonError;
 
-  const { error: planError } = await takt.from('plans').insert({
-    id: lessonId,
-    teacher_id: teacherId,
-    doc: {
-      version: 1, id: lessonId, courseId: COURSE, date, start: `${time.slice(0, 2)}:${time.slice(2)}`,
-      lessonTitle: 'INF-3a', minutes: 45, breaks: [], step: 3, updatedAt: 0, status: 'planned',
-      topic: TOPIC, goals: [], standing: [], homework: '', blocks: [],
-      review: { prompts: PROMPTS },
-    },
-  });
+  planDoc = {
+    version: 1, id: lessonId, courseId: COURSE, date, start: `${time.slice(0, 2)}:${time.slice(2)}`,
+    lessonTitle: 'INF-3a', minutes: 45, breaks: [], step: 3, updatedAt: 0, status: 'planned',
+    topic: TOPIC, goals: ['Ich kann ein sicheres Passwort wählen.'], standing: [], homework: '', blocks: [],
+    review: { prompts: PROMPTS },
+  };
+  const { error: planError } = await takt.from('plans').insert({ id: lessonId, teacher_id: teacherId, doc: planDoc });
   if (planError) throw planError;
 });
 
@@ -95,10 +92,9 @@ async function signIn(page: Page, email: string) {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(TOPIC);
 }
 
-const exitTicket = (page: Page) => page.getByRole('region', { name: 'Exit-Ticket' });
-const anonym = (page: Page) => exitTicket(page).getByRole('region', { name: 'Anonym' });
+const umfrage = (page: Page) => page.getByRole('region', { name: 'Umfrage' });
 const stars = (page: Page, n: string) =>
-  anonym(page).getByRole('group', { name: /Wie war die Lektion für dich\?/ }).getByRole('radio', { name: n, exact: true });
+  umfrage(page).getByRole('group', { name: /Wie war die Lektion für dich\?/ }).getByRole('radio', { name: n, exact: true });
 
 /** What the teacher's count says, as Anna. */
 async function teacherCount(): Promise<{ answered: number; enrolled: number }> {
@@ -110,15 +106,18 @@ async function teacherCount(): Promise<{ answered: number; enrolled: number }> {
   return data as { answered: number; enrolled: number };
 }
 
-test('Lea answers the review and the exit ticket independently, sees "Abgegeben", and a second answer is refused', async ({ browser }) => {
+test('Lea sees no "Bereit" and no exit ticket, answers the Umfrage, sees "Abgegeben" after a restart, and a second answer is refused', async ({ browser }) => {
   // A second window, open on the form before Lea answers in the first.
   const later = await (await browser.newContext()).newPage();
   await signIn(later, 'lea@seed.test');
-  await expect(anonym(later).getByRole('button', { name: 'Anonym abgeben' })).toBeVisible();
+  await expect(umfrage(later).getByRole('button', { name: 'Anonym abgeben' })).toBeVisible();
 
   const page = await (await browser.newContext()).newPage();
   await signIn(page, 'lea@seed.test');
-  const part = anonym(page);
+  await expect(page.getByRole('button', { name: 'Bereit' })).toHaveCount(0);
+  await expect(page.getByText(/Exit-Ticket|Eingecheckt/)).toHaveCount(0);
+
+  const part = umfrage(page);
   await expect(part).toContainText('Deine Lehrperson sieht nicht, wer das geschrieben hat.');
   await expect(part.getByLabel(PROMPTS[1])).toBeVisible();
 
@@ -127,35 +126,25 @@ test('Lea answers the review and the exit ticket independently, sees "Abgegeben"
   await expect(part.getByRole('alert')).toHaveText('Wähle zuerst eine Bewertung von 1 bis 5.');
 
   await stars(page, '4').check();
-  await part.getByLabel(PROMPTS[0]).fill(HELPED);
+  await part.getByLabel(PROMPTS[0]).fill(UNDERSTOOD);
   await part.getByRole('button', { name: 'Anonym abgeben' }).click();
   await expect(part.getByRole('status')).toHaveText('Abgegeben');
   await expect(part.getByRole('button', { name: 'Anonym abgeben' })).toHaveCount(0);
-  await expect(part).not.toContainText(HELPED);
-
-  // The named ticket is untouched: still open, nothing handed in.
-  const ticket = exitTicket(page);
-  await expect(ticket.getByText(/^Offen bis \d\d:\d\d$/)).toBeVisible();
+  await expect(part).not.toContainText(UNDERSTOOD);
   expect(await teacherCount()).toEqual({ answered: 1, enrolled: 4 });
-
-  // Handing in the named ticket leaves the anonymous part as it was.
-  await ticket.getByLabel('Alles klar').check();
-  await ticket.getByRole('button', { name: 'Abgeben', exact: true }).click();
-  await expect(ticket.getByRole('status').filter({ hasText: /^Abgegeben \d\d:\d\d · du kannst/ })).toBeVisible();
-  await expect(part.getByRole('status')).toHaveText('Abgegeben');
 
   // From the server after a restart, and nothing of the answer on the device.
   await page.reload();
-  await expect(anonym(page).getByRole('status')).toHaveText('Abgegeben');
+  await expect(umfrage(page).getByRole('status')).toHaveText('Abgegeben');
   const stored = await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }));
-  expect(stored).not.toContain(HELPED);
+  expect(stored).not.toContain(UNDERSTOOD);
   expect(stored).not.toContain('review');
 
   // The window opened before: its answer is refused, and it shows "Abgegeben".
   await stars(later, '1').check();
-  await anonym(later).getByRole('button', { name: 'Anonym abgeben' }).click();
-  await expect(anonym(later).getByRole('alert')).toHaveText('Du hast diese Bewertung schon abgegeben.');
-  await expect(anonym(later).getByRole('status')).toHaveText('Abgegeben');
+  await umfrage(later).getByRole('button', { name: 'Anonym abgeben' }).click();
+  await expect(umfrage(later).getByRole('alert')).toHaveText('Du hast diese Umfrage schon abgegeben.');
+  await expect(umfrage(later).getByRole('status')).toHaveText('Abgegeben');
   expect(await teacherCount()).toEqual({ answered: 1, enrolled: 4 });
 
   // Not even the service role reads what was written.
@@ -163,26 +152,25 @@ test('Lea answers the review and the exit ticket independently, sees "Abgegeben"
   expect(error?.code).toBe('42501');
 });
 
-test('Noah hands in the exit ticket first, and answers the review after', async ({ page }) => {
+test('before it opens there is no Umfrage, only the lesson', async ({ page }) => {
+  const { error } = await takt.from('lessons').update({ exit_opened_at: null }).eq('teacher_id', teacherId).eq('id', lessonId);
+  if (error) throw error;
   await signIn(page, 'noah@seed.test');
-  const ticket = exitTicket(page);
-  await ticket.getByLabel('Alles klar').check();
-  await ticket.getByRole('button', { name: 'Abgeben', exact: true }).click();
-  await expect(ticket.getByRole('status').filter({ hasText: /^Abgegeben \d\d:\d\d · du kannst/ })).toBeVisible();
-
-  // Handing in answered nothing anonymous: the part is still open.
-  const part = anonym(page);
-  await expect(part.getByRole('button', { name: 'Anonym abgeben' })).toBeVisible();
-  await stars(page, '3').check();
-  await part.getByRole('button', { name: 'Anonym abgeben' }).click();
-  await expect(part.getByRole('status')).toHaveText('Abgegeben');
-  expect(await teacherCount()).toEqual({ answered: 2, enrolled: 4 });
+  await expect(page.getByText('Ich kann ein sicheres Passwort wählen.')).toBeVisible();
+  await expect(umfrage(page)).toHaveCount(0);
 });
 
-test('a lesson without a review has no anonymous part', async ({ page }) => {
-  await takt.from('plans').update({ doc: { topic: TOPIC, goals: [], standing: [], homework: '', blocks: [] } })
-    .eq('teacher_id', teacherId).eq('id', lessonId);
-  await signIn(page, 'lea@seed.test');
-  await expect(exitTicket(page).getByRole('button', { name: 'Abgeben', exact: true })).toBeVisible();
-  await expect(anonym(page)).toHaveCount(0);
+test('a lesson without an Umfrage has none, also when opened early', async ({ page }) => {
+  const { review: _, ...withoutReview } = planDoc;
+  const { error: planError } = await takt.from('plans').update({ doc: withoutReview }).eq('teacher_id', teacherId).eq('id', lessonId);
+  if (planError) throw planError;
+  const { error } = await takt
+    .from('lessons')
+    .update({ exit_opened_at: new Date(Date.now() - 60_000).toISOString() })
+    .eq('teacher_id', teacherId)
+    .eq('id', lessonId);
+  if (error) throw error;
+  await signIn(page, 'noah@seed.test');
+  await expect(page.getByText('Ich kann ein sicheres Passwort wählen.')).toBeVisible();
+  await expect(umfrage(page)).toHaveCount(0);
 });

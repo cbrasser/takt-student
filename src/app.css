@@ -348,7 +348,7 @@ button.badge {
   margin: var(--s-4) 0 var(--s-2);
 }
 
-/* A checkbox with its label: "Alles klar", the settings' switch. */
+/* A checkbox with its label: the settings' switch. */
 .choice {
   display: inline-flex;
   align-items: center;
@@ -364,20 +364,13 @@ button.badge {
   accent-color: var(--ink);
 }
 
-/* The exit ticket's forms, the named part and the anonymous one: text, a
-   scale of numbered steps ("1" to "4", "1" to "5"), and the row under it with
-   the button and what was handed in. */
+/* The Umfrage's form: text, a scale of numbered steps ("1" to "5"), and the
+   row under it with the button and what was handed in. */
 .text-input {
   font: inherit;
   font-weight: 600;
   padding: var(--s-2) var(--s-3);
   resize: vertical;
-}
-
-.text-input[disabled] {
-  color: var(--ink-3);
-  border-color: var(--ink-3);
-  box-shadow: none;
 }
 
 .rating {

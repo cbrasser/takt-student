@@ -12,7 +12,7 @@ function lesson(courseId: string, start: string, minutes = 45, extra: Partial<Le
     courseId,
     startsAt,
     endsAt: new Date(startsAt.getTime() + minutes * MIN),
-    exitOpenedAt: null,
+    reviewOpenedAt: null,
     title: courseId,
     topic: '',
     goals: [],
@@ -53,19 +53,31 @@ test('a lesson is current until a moment before its end', () => {
   });
 });
 
-test('after its end a lesson stays current while its exit ticket is open', () => {
-  assert.deepEqual(home(all, at('2026-11-02T09:00:00+01:00', -1)), {
-    current: monday,
+const UMFRAGE: [string, string] = ['Was hast du gut verstanden?', 'Was war unklar?'];
+const reviewedMonday = { ...monday, review: UMFRAGE };
+const withReview = [nextMonday, reviewedMonday, tuesdayMath, lastMonday];
+
+test('without an Umfrage a lesson is the last one once it ends, and each course shows its next lesson', () => {
+  assert.deepEqual(home(all, at('2026-11-02T08:45:00+01:00')), {
+    current: null,
+    next: [tuesdayMath, nextMonday],
+    last: monday,
+  });
+});
+
+test('after its end a lesson stays current while its Umfrage is open', () => {
+  assert.deepEqual(home(withReview, at('2026-11-02T09:00:00+01:00', -1)), {
+    current: reviewedMonday,
     next: [tuesdayMath, nextMonday],
     last: lastMonday,
   });
 });
 
-test('once its exit ticket closes a lesson is the last one, and each course shows its next lesson', () => {
-  assert.deepEqual(home(all, at('2026-11-02T09:00:00+01:00')), {
+test('once its Umfrage closes a lesson is the last one', () => {
+  assert.deepEqual(home(withReview, at('2026-11-02T09:00:00+01:00')), {
     current: null,
     next: [tuesdayMath, nextMonday],
-    last: monday,
+    last: reviewedMonday,
   });
 });
 
@@ -83,8 +95,8 @@ test('of two open lessons back to back, the later one is current', () => {
   assert.deepEqual(home([first, second], at('2026-11-02T08:42:00+01:00')), { current: second, next: [], last: null });
 });
 
-test('the next lesson\'s window wins over the exit ticket of the one before', () => {
-  const first = lesson('inf', '2026-11-02T08:00:00+01:00');
+test('the next lesson\'s window wins over the Umfrage of the one before', () => {
+  const first = lesson('inf', '2026-11-02T08:00:00+01:00', 45, { review: UMFRAGE });
   const second = lesson('mat', '2026-11-02T08:50:00+01:00');
   assert.deepEqual(home([first, second], at('2026-11-02T08:47:00+01:00')), { current: second, next: [], last: first });
 });
@@ -140,7 +152,7 @@ test('only web addresses become links', () => {
 });
 
 test('courses take the hues in order of their name, and wrap after four', () => {
-  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, teacherName: null, siteUrl: null, checkInStart: null, semesters: [] });
+  const course = (id: string, name: string): Course => ({ teacherId: 'anna', id, name, siteUrl: null, semesters: [] });
   const hues = courseHues([course('e', '5a'), course('a', '1a'), course('c', '3a'), course('b', '2a'), course('d', '4a')]);
   assert.deepEqual(
     ['a', 'b', 'c', 'd', 'e'].map((id) => hues.get(`anna/${id}`)),
@@ -149,12 +161,12 @@ test('courses take the hues in order of their name, and wrap after four', () => 
 });
 
 test('the courses in order of their name, the same teacher\'s order for equal names', () => {
-  const course = (teacherId: string, id: string, name: string): Course => ({ teacherId, id, name, teacherName: null, siteUrl: null, checkInStart: null, semesters: [] });
+  const course = (teacherId: string, id: string, name: string): Course => ({ teacherId, id, name, siteUrl: null, semesters: [] });
   const sorted = coursesByName([course('ben', 'x', 'Übungen'), course('anna', 'b', 'Mathe'), course('anna', 'a', 'Mathe'), course('anna', 'c', 'Biologie')]);
   assert.deepEqual(sorted.map((c) => `${c.teacherId}/${c.id}`), ['anna/c', 'anna/a', 'anna/b', 'ben/x']);
 });
 
-test('a lesson whose ticket has closed stays on show for a student following home', () => {
+test('a lesson that stops being current stays on show for a student following home', () => {
   assert.equal(keptOnShow('anna/l1', null, true), 'anna/l1');
 });
 
